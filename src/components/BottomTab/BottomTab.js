@@ -11,7 +11,7 @@ function BottomTab({ screen }) {
   const navigation = useNavigation();
  
   const getIconColor = (currentScreen) => {
-    return screen === currentScreen ? colors1.gradientcolor4 : colors.darkGrayText;
+    return screen === currentScreen ? colors1.primaryText : colors.darkGrayText;
   };
 
   const getTextStyle = (currentScreen) => {

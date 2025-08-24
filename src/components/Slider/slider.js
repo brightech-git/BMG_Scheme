@@ -1,67 +1,97 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  Image, 
-  Dimensions, 
-  TouchableOpacity, 
-  Animated
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  Image,
+  Dimensions,
+  TouchableOpacity,
+  Animated,
+  Linking,
+  ActivityIndicator
 } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-// Enhanced slider data with more information
-const SLIDER_DATA = [
-  {
-    id: 1,
-    image: require('../../assets/slider11.jpg'),
-  },
-  {
-    id: 2,
-    image: require('../../assets/slider22.jpg'),
-  },
-  {
-    id: 3,
-    image: require('../../assets/slider33.jpg'),
-  },
-];
-
-// Modern colors based on your color scheme
 const colors = {
   primary: '#CD865C',
   primaryDark: '#B35F34',
   primaryLight: '#E8B79D',
-  accent: '#FFB699',
-  highlight: '#FFD1B3',
-  textLight: '#FFFFFF',
-  textDark: '#041f60',
   background: '#FFF9F6',
   shadow: 'rgba(179, 95, 52, 0.3)',
   cardBackground: '#FFFFFF',
-  sectionBackground: '#FBEFE9'
 };
 
-export default function EnhancedSlider() {
+export default function EnhancedSlider({ navigation }) {
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+
   const flatListRef = useRef(null);
   const intervalRef = useRef(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const scrollX = useRef(new Animated.Value(0)).current;
 
-  // Auto-scroll functionality
+  // Fetch banners from API
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch('https://app.bmgjewellers.com/api/v1/App_banner/list');
+        const data = await response.json();
+        
+        // If your API doesn't return URLs, you can add them here
+        // For demonstration, I'm adding sample URLs
+        const bannersWithUrls = data.map((banner, index) => ({
+          ...banner,
+          // Use the URL from API if available, otherwise use these sample URLs
+          url: banner.url || `https://bmgjewellers.com/${index === 0 ? 'collections' : index === 1 ? 'new-arrivals' : 'sale'}`
+        }));
+        
+        setBanners(bannersWithUrls);
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+        
+        // Fallback data in case API fails
+        const fallbackBanners = [
+          {
+            id: 1,
+            image_path: '/images/banner1.jpg',
+            url: 'https://bmgjewellers.com/shop-left?itemName=EARRINGS'
+          },
+          {
+            id: 2,
+            image_path: '/images/banner2.jpg',
+            url: 'https://bmgjewellers.com/shop-left?itemName=NECKLACES'
+          },
+          {
+            id: 3,
+            image_path: '/images/banner3.jpg',
+            url: 'https://bmgjewellers.com/shop-left?itemName=FESTIVAL'
+          }
+        ];
+        setBanners(fallbackBanners);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBanners();
+  }, []);
+
+  // Auto-scroll logic
+  useEffect(() => {
+    if (!banners.length) return;
+    startAutoScroll();
+    return () => stopAutoScroll();
+  }, [banners, currentIndex, isAutoScrolling]);
+
   const startAutoScroll = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    
     intervalRef.current = setInterval(() => {
-      if (isAutoScrolling) {
-        const nextIndex = currentIndex === SLIDER_DATA.length - 1 ? 0 : currentIndex + 1;
+      if (isAutoScrolling && banners.length > 0) {
+        const nextIndex = currentIndex === banners.length - 1 ? 0 : currentIndex + 1;
         scrollToIndex(nextIndex);
       }
-    }, 4000); // 4 seconds for better UX
+    }, 4000);
   };
 
   const stopAutoScroll = () => {
@@ -71,33 +101,13 @@ export default function EnhancedSlider() {
     }
   };
 
-  // Smooth scroll to index
   const scrollToIndex = (index) => {
     if (flatListRef.current) {
-      flatListRef.current.scrollToIndex({ 
-        index, 
-        animated: true,
-        viewPosition: 0.5
-      });
+      flatListRef.current.scrollToIndex({ index, animated: true });
       setCurrentIndex(index);
-      
-      // Animate content
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        })
-      ]).start();
     }
   };
 
-  // Handle manual scroll
   const onScrollEnd = (event) => {
     const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
     if (newIndex !== currentIndex) {
@@ -105,73 +115,40 @@ export default function EnhancedSlider() {
     }
   };
 
-  // Start/stop auto-scroll based on component lifecycle
-  useEffect(() => {
-    startAutoScroll();
+  const handleBannerPress = (url) => {
+    // You can use either external linking or internal navigation
+    // Option 1: Open external URL
+    Linking.openURL(url).catch(err => console.error('Failed to open URL:', err));
     
-    return () => stopAutoScroll();
-  }, [currentIndex, isAutoScrolling]);
+    // Option 2: Navigate internally (if you have set up navigation)
+    // For example, if you have a WebView screen:
+    // navigation.navigate('BannerWebView', { url });
+    
+    // Option 3: Navigate to different screens based on URL
+    // if (url.includes('collections')) {
+    //   navigation.navigate('Collections');
+    // } else if (url.includes('new-arrivals')) {
+    //   navigation.navigate('NewArrivals');
+    // } else if (url.includes('sale')) {
+    //   navigation.navigate('Sale');
+    // }
+  };
 
-  // Animation on mount
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      })
-    ]).start();
-  }, []);
-
-  const renderSliderItem = ({ item, index }) => {
-    const inputRange = [
-      (index - 1) * width,
-      index * width,
-      (index + 1) * width
-    ];
-    
-    const scale = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.9, 1, 0.9],
-      extrapolate: 'clamp'
-    });
-    
-    const opacity = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.7, 1, 0.7],
-      extrapolate: 'clamp'
-    });
-    
+  const renderSliderItem = ({ item }) => {
+    const imageUrl = `https://app.bmgjewellers.com${item.image_path}`;
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.sliderItem}
         activeOpacity={0.9}
-        onPress={() => {
-          // Handle slide tap - you can navigate or show details
-          console.log('Slider item pressed:', item.id);
-        }}
+        onPress={() => handleBannerPress(item.url)}
       >
-        <Animated.View 
-          style={[
-            styles.imageContainer,
-            {
-              opacity,
-              transform: [{ scale }]
-            }
-          ]}
-        >
-          <Image 
-            style={styles.sliderImage} 
-            source={item.image}
+        <Animated.View style={styles.imageContainer}>
+          <Image
+            style={styles.sliderImage}
+            source={{ uri: imageUrl }}
             resizeMode="cover"
+            onError={(e) => console.log('Failed to load image:', e.nativeEvent.error)}
           />
-          
-          {/* Semi-transparent overlay for better visual effect */}
           <View style={styles.overlay} />
         </Animated.View>
       </TouchableOpacity>
@@ -180,35 +157,32 @@ export default function EnhancedSlider() {
 
   const renderPaginationDots = () => (
     <View style={styles.paginationContainer}>
-      {SLIDER_DATA.map((_, index) => {
+      {banners.map((_, index) => {
         const inputRange = [
           (index - 1) * width,
           index * width,
           (index + 1) * width
         ];
-        
+
         const scale = scrollX.interpolate({
           inputRange,
           outputRange: [1, 1.3, 1],
           extrapolate: 'clamp'
         });
-        
+
         const opacity = scrollX.interpolate({
           inputRange,
           outputRange: [0.5, 1, 0.5],
           extrapolate: 'clamp'
         });
-        
+
         return (
           <Animated.View
             key={index}
             style={[
               styles.paginationDot,
               index === currentIndex && styles.paginationDotActive,
-              {
-                transform: [{ scale }],
-                opacity
-              }
+              { transform: [{ scale }], opacity }
             ]}
           />
         );
@@ -216,11 +190,19 @@ export default function EnhancedSlider() {
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Animated.FlatList
         ref={flatListRef}
-        data={SLIDER_DATA}
+        data={banners}
         horizontal
         showsHorizontalScrollIndicator={false}
         renderItem={renderSliderItem}
@@ -249,13 +231,8 @@ export default function EnhancedSlider() {
           offset: width * index,
           index,
         })}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={3}
-        windowSize={5}
       />
-      
-      {/* Enhanced Pagination Dots with animations */}
-      {renderPaginationDots()}
+      {banners.length > 1 && renderPaginationDots()}
     </View>
   );
 }
@@ -266,14 +243,12 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     position: 'relative',
   },
-  
   sliderItem: {
     width: width,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 15,
   },
-  
   imageContainer: {
     width: '95%',
     height: 200,
@@ -282,21 +257,16 @@ const styles = StyleSheet.create({
     position: 'relative',
     elevation: 8,
     shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     backgroundColor: colors.cardBackground,
   },
-  
   sliderImage: {
     width: '100%',
     height: '100%',
     borderRadius: 20,
   },
-  
   overlay: {
     position: 'absolute',
     top: 0,
@@ -306,8 +276,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 20,
   },
-  
-  // Enhanced Pagination Dots
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -316,7 +284,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 20,
   },
-  
   paginationDot: {
     width: 8,
     height: 8,
@@ -324,7 +291,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     marginHorizontal: 4,
   },
-  
   paginationDotActive: {
     backgroundColor: colors.primary,
     width: 16,

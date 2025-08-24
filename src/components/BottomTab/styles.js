@@ -26,8 +26,8 @@ const styles = StyleSheet.create({
   },
   activeText: {
     marginTop: verticalScale(4),
-    color: colors1.greenColor,
-    fontSize: 12,
+    color: colors1.primaryText,
+    fontSize: 14,
 
     fontWeight: 'bold',
   },
