@@ -7,7 +7,8 @@ import {
   Image,
   TouchableOpacity,
   ImageBackground,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,10 +24,23 @@ function OTP({ navigation }) {
   const [otp, setOtp] = useState(['', '', '', '']);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [isOtpVisible, setIsOtpVisible] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const inputRefs = useRef([]);
 
   const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+  // Timer for resend OTP
+  React.useEffect(() => {
+    let timer;
+    if (resendTimer > 0) {
+      timer = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendTimer]);
 
   const handlePhoneChange = (text) => {
     const cleanedText = text.replace(/\D/g, '');
@@ -45,29 +59,57 @@ function OTP({ navigation }) {
     const otp = generateOtp();
     setGeneratedOtp(otp);
     setOtp(['', '', '', '']);
+    setLoading(true);
 
     try {
-      const apiUrl = `https://sms.krispal.in/api/smsapi`;
-      const params = {
-        key: 'f22fc7c406cfd9b0f2767d436a1c7c69',
-        route: '2',
-        sender: 'VIMJEW',
-        number: phoneNumber,
-        sms: `Dear Customer, This is your OTP: ${otp} for Login. Thank you for Shopping - Vimala Jewellers - Manali`,
-        templateid: '1707172725674467368',
-      };
+      // Using TextSpeed SMS gateway
+      const smsApiUrl = `https://sms.textspeed.in/vb/apikey.php`;
+      const params = new URLSearchParams({
+        apikey: "dYU7ULuItj9iZQWM",
+        senderid: "BMGJEW",
+        templateid: "1707174840853673783",
+        number: `91${phoneNumber}`,
+        message: `Welcome ${phoneNumber}! Do not share the OTP below with anyone. Your OTP is ${otp} to verify your phone number. This code is valid for 5 minutes.BMG JEWELLERS PRIVATE LIMITED`,
+      });
 
-      await axios.post(apiUrl, null, { params });
-      showToast('OTP sent successfully!');
+      const fullUrl = `${smsApiUrl}?${params}`;
+      console.log('SMS API URL:', fullUrl);
+      console.log('Generated OTP:', otp);
+      console.log('Phone number:', phoneNumber);
+
+      const response = await fetch(fullUrl);
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      let result;
       try {
-        await AsyncStorage.setItem('userPhoneNumber', phoneNumber);
-      } catch (storageError) {
-        console.error('Failed to save phone number:', storageError);
+        result = JSON.parse(responseText);
+        console.log('Parsed response:', result);
+      } catch (e) {
+        console.log('Response is not JSON:', responseText);
+        result = { status: "Error", description: "Invalid response from server" };
       }
-      setIsOtpVisible(true);
+
+      if (response.ok && result.status === "Success") {
+        console.log('SMS sent successfully');
+        showToast('OTP sent successfully!');
+        try {
+          await AsyncStorage.setItem('userPhoneNumber', phoneNumber);
+        } catch (storageError) {
+          console.error('Failed to save phone number:', storageError);
+        }
+        setIsOtpVisible(true);
+        setResendTimer(30); // Set 30 seconds timer for resend
+      } else {
+        const errorMsg = result.description || 'Failed to send OTP. Please try again.';
+        console.log('SMS sending failed:', errorMsg);
+        showToast(errorMsg);
+      }
     } catch (error) {
+      console.error('SMS sending error:', error);
       showToast('Failed to send OTP. Please try again.');
-      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,17 +207,22 @@ function OTP({ navigation }) {
                 )}
 
                 <TouchableOpacity 
-                  style={styles.primaryButton}
+                  style={[styles.primaryButton, loading && styles.disabledButton]}
                   onPress={handleSendOtp}
                   activeOpacity={0.8}
+                  disabled={loading}
                 >
                   <LinearGradient
-                    colors={colors1.gradientPrimary}
+                    colors={loading ? ['#cccccc', '#bbbbbb'] : colors1.gradientPrimary}
                     style={styles.buttonGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
-                    <Text style={styles.primaryButtonText}>Send OTP</Text>
+                    {loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Send OTP</Text>
+                    )}
                   </LinearGradient>
                 </TouchableOpacity>
               </>
@@ -224,10 +271,13 @@ function OTP({ navigation }) {
 
                 <TouchableOpacity 
                   style={styles.resendContainer}
-                  onPress={handleSendOtp}
+                  onPress={resendTimer === 0 ? handleSendOtp : null}
+                  disabled={resendTimer > 0}
                 >
                   <Text style={styles.resendText}>Didn't receive OTP? </Text>
-                  <Text style={styles.resendLink}>Resend</Text>
+                  <Text style={[styles.resendLink, resendTimer > 0 && styles.resendDisabled]}>
+                    {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend'}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -245,6 +295,12 @@ const styles = StyleSheet.create({
   },
   gradientOverlay: {
     flex: 1,
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  resendDisabled: {
+    opacity: 0.5,
   },
   container: {
     flex: 1,
