@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BMG_SCHEME",
-    "slug": "bmg-scheme",
+    "slug": "akj-8",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,6 @@
       "buildNumber": "1.0.0"
     },
     "android": {
-     
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
@@ -34,7 +33,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "c2324775-b2a0-47ff-afe4-d2c2fd53753e"
+        "projectId": "f3296a21-d3e3-4d03-8ffc-3b937ba04164"
       }
     },
     "owner": "kiruba08"
