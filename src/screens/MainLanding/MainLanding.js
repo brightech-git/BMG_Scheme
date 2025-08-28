@@ -453,7 +453,7 @@ function MainLanding() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productgoldContainer}>
             {loading ? (
               <>
                 <GoldPlansSkeleton />

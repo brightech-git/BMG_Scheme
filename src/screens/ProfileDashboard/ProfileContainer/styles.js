@@ -1,7 +1,12 @@
-import { StyleSheet } from 'react-native';
+// import { StyleSheet } from 'react-native';
 import { verticalScale, scale } from '../../../utils/scaling';
 import { colors } from '../../../utils';
 import { colors1 } from '../../../utils/colors';
+import { StyleSheet, Dimensions } from 'react-native';
+
+
+const { width } = Dimensions.get('window');
+const SIDEBAR_WIDTH = width * 0.8;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -11,6 +16,101 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+   // New styles for sidebar
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 999,
+  },
+  sidebarContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  sidebarSafeArea: {
+    flex: 1,
+  },
+  sidebarScrollView: {
+    flex: 1,
+  },
+  sidebarScrollContent: {
+    paddingBottom: 20,
+  },
+  sidebarCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1001,
+    padding: 10,
+  },
+   // Top Header Section
+  topHeaderSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: colors1.primary,
+  },
+  faqIconContainer: {
+    padding: 5,
+  },
+  menuIconContainer: {
+    padding: 5,
+  },
+  
+  // New styles for sidebar
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 999,
+  },
+  sidebarContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  sidebarSafeArea: {
+    flex: 1,
+  },
+  sidebarScrollView: {
+    flex: 1,
+  },
+  sidebarScrollContent: {
+    paddingBottom: 20,
+  },
+  sidebarCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1001,
+    padding: 10,
+  },
+  
   scrollContent: {
     flexGrow: 1,
     paddingBottom: verticalScale(20),

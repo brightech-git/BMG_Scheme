@@ -355,6 +355,9 @@ const styles = StyleSheet.create({
     ...alignment.MTsmall,
     ...alignment.MRlarge
   },
+  productgoldContainer: {
+    paddingLeft: scale(10),
+  },
   iconContainer: {
     width: scale(60),
     height: verticalScale(60),
