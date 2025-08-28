@@ -47,6 +47,7 @@ function GoldPlan(props) {
           <TouchableOpacity
             style={styles.payButton}
             onPress={() => navigation.navigate('AddNewMember', { schemeId })}
+            onPressIn={() => console.log('Join Scheme pressed', schemeId)}
           >
             <TextDefault style={styles.payButtonText}>Join Scheme</TextDefault>
           </TouchableOpacity>

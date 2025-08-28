@@ -26,6 +26,7 @@ function OTP({ navigation }) {
   const [isOtpVisible, setIsOtpVisible] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const inputRefs = useRef([]);
 
@@ -41,6 +42,17 @@ function OTP({ navigation }) {
     }
     return () => clearInterval(timer);
   }, [resendTimer]);
+
+  // Auto-verify OTP when all digits are filled
+  React.useEffect(() => {
+    const isOtpComplete = otp.every(digit => digit !== '');
+    if (isOtpComplete && !isVerifying) {
+      // Small delay for better UX
+      setTimeout(() => {
+        handleVerifyOtp();
+      }, 300);
+    }
+  }, [otp, isVerifying]);
 
   const handlePhoneChange = (text) => {
     const cleanedText = text.replace(/\D/g, '');
@@ -114,7 +126,14 @@ function OTP({ navigation }) {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.join('') === generatedOtp) {
+    if (isVerifying) return; // Prevent multiple simultaneous verifications
+    
+    const enteredOtp = otp.join('');
+    if (enteredOtp.length !== 4) return; // Don't verify incomplete OTP
+    
+    setIsVerifying(true);
+    
+    if (enteredOtp === generatedOtp) {
       try {
         const storedPhoneNumber = await AsyncStorage.getItem('userPhoneNumber');
         
@@ -136,24 +155,42 @@ function OTP({ navigation }) {
         await AsyncStorage.setItem('isOtpVerified', 'true');
         await AsyncStorage.removeItem('mpin');
         await AsyncStorage.removeItem('isMpinCreated');
+        
+        showToast('OTP verified successfully!');
         navigation.navigate('MpinScreen', { step: 3 });
       } catch (error) {
         showToast('Failed to save user details. Please try again.');
         console.error(error);
+        setIsVerifying(false);
       }
     } else {
       showToast('Invalid OTP. Please try again.');
+      // Clear OTP and focus on first input for re-entry
+      setOtp(['', '', '', '']);
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
+      setIsVerifying(false);
     }
   };
 
   const handleOtpChange = (value, index) => {
+    // Only allow numeric input
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
     const newOtp = [...otp];
-    newOtp[index] = value;
+    newOtp[index] = numericValue;
     setOtp(newOtp);
 
-    if (value && index < otp.length - 1) {
+    if (numericValue && index < otp.length - 1) {
       inputRefs.current[index + 1]?.focus();
-    } else if (!value && index > 0) {
+    } else if (!numericValue && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleKeyPress = (event, index) => {
+    if (event.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -238,7 +275,10 @@ function OTP({ navigation }) {
                     <LinearGradient
                       key={index}
                       colors={digit ? colors1.gradientPrimary : ['#FFFFFF', '#F7F7F7']}
-                      style={styles.otpInputWrapper}
+                      style={[
+                        styles.otpInputWrapper,
+                        isVerifying && digit && styles.otpInputVerifying
+                      ]}
                     >
                       <TextInput
                         ref={(ref) => (inputRefs.current[index] = ref)}
@@ -247,35 +287,51 @@ function OTP({ navigation }) {
                         maxLength={1}
                         value={digit}
                         onChangeText={(value) => handleOtpChange(value, index)}
+                        onKeyPress={(event) => handleKeyPress(event, index)}
                         textAlign="center"
                         selectionColor={colors1.primary}
+                        editable={!isVerifying}
                       />
                     </LinearGradient>
                   ))}
                 </View>
 
-                <TouchableOpacity 
-                  style={styles.primaryButton}
-                  onPress={handleVerifyOtp}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={colors1.gradientPrimary}
-                    style={styles.buttonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
+                {/* Auto-verify indicator */}
+                {isVerifying && (
+                  <View style={styles.verifyingContainer}>
+                    <ActivityIndicator color={colors1.primary} size="small" />
+                    <Text style={styles.verifyingText}>Verifying OTP...</Text>
+                  </View>
+                )}
+
+                {/* Manual verify button (optional, for cases where auto-verify fails) */}
+                {!isVerifying && otp.every(digit => digit !== '') && (
+                  <TouchableOpacity 
+                    style={styles.primaryButton}
+                    onPress={handleVerifyOtp}
+                    activeOpacity={0.8}
                   >
-                    <Text style={styles.primaryButtonText}>Verify OTP</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+                    <LinearGradient
+                      colors={colors1.gradientPrimary}
+                      style={styles.buttonGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <Text style={styles.primaryButtonText}>Verify OTP</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity 
                   style={styles.resendContainer}
                   onPress={resendTimer === 0 ? handleSendOtp : null}
-                  disabled={resendTimer > 0}
+                  disabled={resendTimer > 0 || isVerifying}
                 >
                   <Text style={styles.resendText}>Didn't receive OTP? </Text>
-                  <Text style={[styles.resendLink, resendTimer > 0 && styles.resendDisabled]}>
+                  <Text style={[
+                    styles.resendLink, 
+                    (resendTimer > 0 || isVerifying) && styles.resendDisabled
+                  ]}>
                     {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend'}
                   </Text>
                 </TouchableOpacity>
@@ -397,7 +453,7 @@ const styles = StyleSheet.create({
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    marginBottom: 20,
     gap: 12,
   },
   otpInputWrapper: {
@@ -409,12 +465,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  otpInputVerifying: {
+    opacity: 0.7,
+  },
   otpInput: {
     width: '100%',
     height: '100%',
     fontSize: 24,
     fontWeight: 'bold',
     color: colors1.textPrimary,
+  },
+  verifyingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  verifyingText: {
+    marginLeft: 8,
+    color: colors1.primary,
+    fontSize: 14,
+    fontWeight: '500',
   },
   primaryButton: {
     borderRadius: 16,
