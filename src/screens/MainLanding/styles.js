@@ -353,7 +353,18 @@ const styles = StyleSheet.create({
     width: scale(290),
     height: scale(220),
     ...alignment.MTsmall,
-    ...alignment.MRlarge
+    ...alignment.MRlarge,
+  paddingLeft: scale(0),
+  },
+  productgoldContainer: {
+    padding: scale(10),
+    backgroundColor: colors1.cardBackground,
+    borderRadius: scale(10),
+    elevation: 2,
+    shadowColor: colors1.primaryDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.5,
   },
   iconContainer: {
     width: scale(60),

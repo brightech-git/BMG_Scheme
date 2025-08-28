@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient'; // ✅ Import LinearGradient
+import { LinearGradient } from 'expo-linear-gradient';
 import { TextDefault } from '../../components';
 import { alignment, colors, scale } from '../../utils';
 import { colors1 } from '../../utils/colors';
@@ -10,13 +10,18 @@ function GoldPlan(props) {
   const { schemeId, schemeName, description = 'No description available' } = props;
   const navigation = useNavigation();
 
+  // ✅ Only render schemeId = 5 (Dream Gold Plan)
+  if (schemeId !== 5) {
+    return null;
+  }
+
   return (
     <TouchableOpacity style={[styles.cardContainer, props.styles]}>
       {/* 🔥 Gradient Background */}
       <LinearGradient
-        colors={[colors1.gradientcolor3, colors1.gradientcolor4]} // Pick your gradient colors
-        start={{ x: 0, y: 0 }} // Top
-        end={{ x: 0, y: 1 }}   // Bottom
+        colors={[colors1.gradientcolor3, colors1.gradientcolor4]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
         style={styles.gradientBackground}
       >
         {/* Top Section */}
@@ -107,7 +112,7 @@ const styles = StyleSheet.create({
     color: colors.greenColor,
     fontSize: 14,
     marginBottom: 20,
-     fontWeight: 'bold',
+    fontWeight: 'bold',
   },
   schemeText: {
     color: colors.greenColor,

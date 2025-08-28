@@ -27,6 +27,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+<<<<<<< Updated upstream
 // Constants
 const VALIDATION_RULES = {
   PAN_REGEX: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
@@ -35,6 +36,76 @@ const VALIDATION_RULES = {
   MOBILE_REGEX: /^[6-9]\d{9}$/,
   PINCODE_REGEX: /^\d{6}$/,
   MIN_AGE: 18,
+=======
+    useEffect(() => {
+        const selected = items.find(item => item.value === selectedValue);
+        setSelectedLabel(selected ? selected.label : placeholder);
+    }, [selectedValue, items, placeholder]);
+
+    const handleSelect = (item) => {
+        onValueChange(item.value);
+        setModalVisible(false);
+    };
+
+    return (
+        <View>
+            <TouchableOpacity 
+                style={[styles.pickerButton, !enabled && styles.pickerDisabled]} 
+                onPress={() => enabled && setModalVisible(true)}
+                activeOpacity={0.7}
+            >
+                <Text style={[styles.pickerText, selectedValue ? {} : styles.placeholderText]}>
+                    {selectedLabel}
+                </Text>
+                <View style={styles.pickerIcon}>
+                    <Text style={styles.pickerIconText}>▼</Text>
+                </View>
+            </TouchableOpacity>
+
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select Option</Text>
+                            <TouchableOpacity 
+                                style={styles.closeButtonContainer}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.closeButton}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={items}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={[
+                                        styles.modalItem,
+                                        item.value === selectedValue && styles.selectedModalItem
+                                    ]}
+                                    onPress={() => handleSelect(item)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[
+                                        styles.modalItemText,
+                                        item.value === selectedValue && styles.selectedModalItemText
+                                    ]}>
+                                        {item.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                </View>
+            </Modal>
+        </View>
+    );
+>>>>>>> Stashed changes
 };
 
 const STEP_TITLES = {
@@ -644,6 +715,7 @@ const AddNewMember = () => {
       errors.dob = 'Date of Birth is required';
     }
 
+<<<<<<< Updated upstream
     // Specific validations
     const validationChecks = [
       { field: 'panNumber', validator: ValidationUtils.validatePAN },
@@ -652,6 +724,48 @@ const AddNewMember = () => {
       { field: 'mobile', validator: ValidationUtils.validateMobile },
       { field: 'pincode', validator: ValidationUtils.validatePincode },
     ];
+=======
+    useEffect(() => {
+        const fetchCitiesForPincode = async () => {
+            if (pincode && pincode.length === 6) {
+                try {
+                    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        if (data && data[0]?.Status === "Success" && data[0]?.PostOffice) {
+                            const postOffices = data[0].PostOffice;
+                            const cityList = [...new Set(postOffices.map(po => po.Name))];
+                            setCities(cityList);
+                            const stateName = postOffices[0].State;
+                            setSelectedState(stateName);
+
+                            if (city && !cityList.includes(city)) {
+                                setCity('');
+                            }
+                        } else {
+                            setCities([]);
+                            setCity('');
+                            setSelectedState('');
+                        }
+                    } else {
+                        setCities([]);
+                        setCity('');
+                        setSelectedState('');
+                    }
+                } catch (error) {
+                    console.error('Error fetching cities:', error);
+                    setCities([]);
+                    setCity('');
+                    setSelectedState('');
+                }
+            } else {
+                setCities([]);
+                setCity('');
+                setSelectedState('');
+            }
+        };
+>>>>>>> Stashed changes
 
     validationChecks.forEach(({ field, validator }) => {
       if (formData[field]) {
@@ -666,10 +780,56 @@ const AddNewMember = () => {
       if (ageError) errors.dob = ageError;
     }
 
+<<<<<<< Updated upstream
     // Country validation
     if (formData.country !== 'India') {
       errors.country = 'Country should be India';
     }
+=======
+    const validateAadhaar = (aadhaar) => {
+        const aadhaarRegex = /^\d{12}$/;
+        if (!aadhaar) return 'Aadhaar Number is required';
+        if (!aadhaarRegex.test(aadhaar)) return 'Aadhaar should be 12 digits';
+
+        // Verhoeff algorithm tables
+        const d = [
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
+            [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],
+            [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],
+            [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
+            [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],
+            [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],
+            [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],
+            [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],
+            [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        ];
+
+        const p = [
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
+            [5, 8, 0, 3, 7, 9, 6, 1, 4, 2],
+            [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
+            [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
+            [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],
+            [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],
+            [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]
+        ];
+
+        const inv = [0, 4, 3, 2, 1, 5, 6, 7, 8, 9];
+
+        // Verhoeff algorithm implementation
+        let c = 0;
+        const digits = aadhaar.split('').map(Number).reverse();
+        for (let i = 0; i < digits.length; i++) {
+            c = d[c][p[i % 8][digits[i]]];
+        }
+        if (c !== 0) {
+            return 'Invalid Aadhaar number (checksum failed)';
+        }
+        return '';
+    };
+>>>>>>> Stashed changes
 
     // City validation for pincode
     if (formData.city && cities.length > 0 && !cities.includes(formData.city)) {
@@ -802,6 +962,7 @@ const AddNewMember = () => {
       let finalAmount = formData.amount;
       let selectedAmount = null;
 
+<<<<<<< Updated upstream
       if (isDigiGold) {
         finalAmount = formData.customAmount;
       } else if (isDreamGold) {
@@ -886,6 +1047,582 @@ const AddNewMember = () => {
       );
     }
 
+=======
+    const handleSubmit = async () => {
+        if (isSubmitting) return;
+
+        if (!validateStep2()) {
+            Alert.alert('Please fill all required fields correctly.');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        const newMember = {
+            title: namePrefix,
+            initial,
+            pName: name,
+            sName: surname,
+            doorNo,
+            address1,
+            address2,
+            area,
+            city,
+            state: selectedState,
+            country,
+            pinCode: pincode,
+            mobile,
+            idProof: aadharNumber,
+            idProofNo: panNumber,
+            dob,
+            email,
+            upDateTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            userId: '999',
+            appVer: '19.12.10.1',
+        };
+
+        const createSchemeSummary = {
+            schemeId: selectedSchemeId,
+            groupCode: selectedGroupcodetObj,
+            regNo: selectedCurrentRegcodetObj,
+            joinDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            upDateTime2: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            openingDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            userId2: '9999',
+        };
+
+        const schemeCollectInsert = {
+            amount,
+            modePay,
+            accCode
+        };
+
+        const requestBody = {
+            newMember,
+            createSchemeSummary,
+            schemeCollectInsert
+        };
+
+        try {
+            const response = await fetch('https://akj.brightechsoftware.com/v1/api/member/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) {
+                throw new Error('Error creating member: ' + response.statusText);
+            }
+
+            Alert.alert('Success', 'Member added successfully!', [
+                { text: 'OK', onPress: () => navigation.navigate('MainLanding') }
+            ]);
+            resetFormFields();
+
+        } catch (error) {
+            console.error('Error:', error);
+            Alert.alert('Error', error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const resetFormFields = () => {
+        setScheme('');
+        setSelectedGroupcodeObj(null);
+        setSelectedCurrentRegObj(null);
+        setInitial('');
+        setName('');
+        setSurname('');
+        setDoorNo('');
+        setAddress1('');
+        setAddress2('');
+        setArea('');
+        setCity('');
+        setSelectedState('');
+        setState('');
+        setCountry('India');
+        setPincode('');
+        setMobile('');
+        setDob(new Date());
+        setDateText('Select Date');
+        setEmail('');
+        setPanNumber('');
+        setAadharNumber('');
+        setAmounts([]);
+        setAmount('');
+        setAccCode('');
+        setModepay('C');
+        setSelectedSchemeId(null);
+        setValidationErrors({});
+    };
+    
+    const handleDateChange = (event, selectedDate) => {
+        const currentDate = selectedDate || dob;
+        setShowDatePicker(Platform.OS === 'ios');
+        setDob(currentDate);
+        
+        if (selectedDate) {
+            const formattedDate = selectedDate.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            setDateText(formattedDate);
+        }
+    };
+
+    const showPicker = () => {
+        setShowDatePicker(true);
+    };
+
+    const handleNextStep = () => {
+        if (validateStep1()) {
+            setCurrentStep(2);
+        } else {
+            Alert.alert('Validation Error', 'Please fill all required fields correctly.');
+        }
+    };
+
+    const renderDatePicker = () => {
+        return (
+            <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                    Date of Birth <Text style={styles.asterisk}>*</Text>
+                </Text>
+                <TouchableOpacity 
+                    onPress={showPicker} 
+                    style={[styles.dateInput, validationErrors.dob && styles.inputError]}
+                    activeOpacity={0.7}
+                >
+                    <Text style={[styles.inputText, dateText === 'Select Date' ? styles.placeholderText : styles.dateText]}>
+                        {dateText}
+                    </Text>
+                </TouchableOpacity>
+                {validationErrors.dob && (
+                    <Text style={styles.errorText}>{validationErrors.dob}</Text>
+                )}
+                {showDatePicker && (
+                    <DateTimePicker
+                        testID="dateTimePicker"
+                        value={dob}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={handleDateChange}
+                        maximumDate={new Date()}
+                        minimumDate={new Date(1900, 0, 1)}
+                    />
+                )}
+            </View>
+        );
+    };
+
+    const renderCityInput = () => {
+        if (cities.length > 0) {
+            return (
+                <View style={[styles.inputContainer, validationErrors.city && styles.inputError]}>
+                    <Text style={styles.label}>
+                        City <Text style={styles.asterisk}>*</Text>
+                    </Text>
+                    <CustomPicker
+                        selectedValue={city}
+                        onValueChange={(value) => setCity(value)}
+                        items={[
+                            { label: "Select a City", value: "" },
+                            ...cities.map(cityName => ({ label: cityName, value: cityName }))
+                        ]}
+                        placeholder="Select a City"
+                    />
+                    {validationErrors.city && (
+                        <Text style={styles.errorText}>{validationErrors.city}</Text>
+                    )}
+                </View>
+            );
+        }
+
+        return (
+            <View style={[styles.inputContainer, validationErrors.city && styles.inputError]}>
+                <Text style={styles.label}>
+                    City <Text style={styles.asterisk}>*</Text>
+                </Text>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={setCity}
+                    value={city}
+                    placeholder="Enter City"
+                    placeholderTextColor={colors.fontPlaceholder}
+                    editable={cities.length === 0}
+                />
+                {validationErrors.city && (
+                    <Text style={styles.errorText}>{validationErrors.city}</Text>
+                )}
+            </View>
+        );
+    };
+
+    const renderStep = () => {
+        switch (currentStep) {
+            case 1:
+                return (
+                    <View style={styles.card}>
+                        <BackHeader 
+                            title="Member Details"
+                            backPressed={() => navigation.goBack()}
+                            style={styles.header}
+                        />
+                        
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Initial <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.initial && styles.inputError]}
+                                onChangeText={setInitial}
+                                value={initial}
+                                placeholder="Enter Initial"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.initial && (
+                                <Text style={styles.errorText}>{validationErrors.initial}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>First Name <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.name && styles.inputError]}
+                                onChangeText={setName}
+                                value={name}
+                                placeholder="Enter First Name"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.name && (
+                                <Text style={styles.errorText}>{validationErrors.name}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Surname <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.surname && styles.inputError]}
+                                onChangeText={setSurname}
+                                value={surname}
+                                placeholder="Enter Surname"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.surname && (
+                                <Text style={styles.errorText}>{validationErrors.surname}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Door No <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.doorNo && styles.inputError]}
+                                onChangeText={setDoorNo}
+                                value={doorNo}
+                                placeholder="Enter Door No"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.doorNo && (
+                                <Text style={styles.errorText}>{validationErrors.doorNo}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Address 1 <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.address1 && styles.inputError]}
+                                onChangeText={setAddress1}
+                                value={address1}
+                                placeholder="Enter Address 1"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.address1 && (
+                                <Text style={styles.errorText}>{validationErrors.address1}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Address 2</Text>
+                            <TextInput
+                                style={styles.input}
+                                onChangeText={setAddress2}
+                                value={address2}
+                                placeholder="Enter Address 2"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Area <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.area && styles.inputError]}
+                                onChangeText={setArea}
+                                value={area}
+                                placeholder="Enter Area"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.area && (
+                                <Text style={styles.errorText}>{validationErrors.area}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Pincode <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.pincode && styles.inputError]}
+                                onChangeText={setPincode}
+                                value={pincode}
+                                placeholder="Enter Pincode"
+                                keyboardType="numeric"
+                                maxLength={6}
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.pincode && (
+                                <Text style={styles.errorText}>{validationErrors.pincode}</Text>
+                            )}
+                            {cities.length > 0 && (
+                                <Text style={styles.hintText}>
+                                    Available cities: {cities.join(', ')}
+                                </Text>
+                            )}
+                        </View>
+
+                        {renderCityInput()}
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>State <Text style={styles.asterisk}>*</Text></Text>
+                            <CustomPicker
+                                selectedValue={selectedState}
+                                onValueChange={(itemValue) => setSelectedState(itemValue)}
+                                items={[
+                                    { label: "Select a State", value: "" },
+                                    ...states.map(state => ({ label: state, value: state }))
+                                ]}
+                                placeholder="Select a State"
+                            />
+                            {validationErrors.selectedState && (
+                                <Text style={styles.errorText}>{validationErrors.selectedState}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Country <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.country && styles.inputError]}
+                                onChangeText={setCountry}
+                                value={country}
+                                placeholder="Enter Country"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.country && (
+                                <Text style={styles.errorText}>{validationErrors.country}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Mobile Number <Text style={styles.asterisk}>*</Text></Text>
+                            <View style={[styles.mobileInputContainer, (validationErrors.mobile || !isMobileValid) && styles.inputError]}>
+                                <Text style={styles.countryCode}>+91</Text>
+                                <TextInput
+                                    style={[styles.input, styles.mobileInput]}
+                                    onChangeText={handleMobileChange}
+                                    value={mobile}
+                                    placeholder="Enter 10-digit Mobile Number"
+                                    keyboardType="numeric"
+                                    maxLength={10}
+                                    placeholderTextColor={colors.fontPlaceholder}
+                                />
+                            </View>
+                            {(validationErrors.mobile || (!isMobileValid && mobile.length > 0)) && (
+                                <Text style={styles.errorText}>
+                                    {validationErrors.mobile || 'Please enter a valid 10-digit mobile number starting with 6-9'}
+                                </Text>
+                            )}
+                        </View>
+
+                        {renderDatePicker()}
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Email <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.email && styles.inputError]}
+                                onChangeText={setEmail}
+                                value={email}
+                                placeholder="Enter Email"
+                                placeholderTextColor={colors.fontPlaceholder}
+                                keyboardType="email-address"
+                            />
+                            {validationErrors.email && (
+                                <Text style={styles.errorText}>{validationErrors.email}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>PAN Number <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.panNumber && styles.inputError]}
+                                onChangeText={(text) => {
+                                    setPanNumber(text.toUpperCase());
+                                    if (validationErrors.panNumber) {
+                                        setValidationErrors(prev => ({ ...prev, panNumber: '' }));
+                                    }
+                                }}
+                                value={panNumber}
+                                placeholder="Enter PAN Number (e.g., ABCDE1234F)"
+                                maxLength={10}
+                                autoCapitalize="characters"
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.panNumber && (
+                                <Text style={styles.errorText}>{validationErrors.panNumber}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Aadhaar Number <Text style={styles.asterisk}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input, validationErrors.aadharNumber && styles.inputError]}
+                                onChangeText={(text) => {
+                                    const numericValue = text.replace(/[^0-9]/g, '');
+                                    setAadharNumber(numericValue);
+                                    if (validationErrors.aadharNumber) {
+                                        setValidationErrors(prev => ({ ...prev, aadharNumber: '' }));
+                                    }
+                                }}
+                                value={aadharNumber}
+                                placeholder="Enter 12-digit Aadhaar Number"
+                                keyboardType="numeric"
+                                maxLength={12}
+                                placeholderTextColor={colors.fontPlaceholder}
+                            />
+                            {validationErrors.aadharNumber && (
+                                <Text style={styles.errorText}>{validationErrors.aadharNumber}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity 
+                                style={[styles.button, styles.backButton]} 
+                                onPress={handleBack}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.buttonText}>Back</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.button, styles.nextButton]} 
+                                onPress={handleNextStep}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.buttonText}>Next</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+            case 2:
+                return (
+                    <View style={styles.card}>
+                        <BackHeader 
+                            title="Scheme Details"
+                            backPressed={() => setCurrentStep(1)}
+                            style={styles.header}
+                        />
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Scheme Selection</Text>
+                            <View style={styles.schemeDisplay}>
+                                <Text style={styles.schemeText}>
+                                    {schemes.find(s => s.id === selectedSchemeId)?.name || "No scheme selected"}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Amount <Text style={styles.asterisk}>*</Text></Text>
+                            <CustomPicker
+                                selectedValue={amount}
+                                onValueChange={itemValue => {
+                                    const selectedAmount = amounts.find(amt => amt.value === itemValue);
+                                    setAmount(itemValue);
+                                    if (selectedAmount) {
+                                        setSelectedGroupcodeObj(selectedAmount.groupCode);
+                                        setSelectedCurrentRegObj(selectedAmount.currentRegNo);
+                                    }
+                                }}
+                                items={amounts.map(amt => ({ label: amt.value, value: amt.value }))}
+                                placeholder="Select Amount"
+                                enabled={!isSubmitting}
+                            />
+                            {validationErrors.amount && (
+                                <Text style={styles.errorText}>{validationErrors.amount}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Payment Mode <Text style={styles.asterisk}>*</Text></Text>
+                            <CustomPicker
+                                selectedValue={accCode}
+                                onValueChange={itemValue => {
+                                    setAccCode(itemValue);
+                                    const selectedType = transactionTypes.find(type => type.ACCOUNT === itemValue);
+                                    if (selectedType && selectedType.CARDTYPE) {
+                                        setModepay(selectedType.CARDTYPE);
+                                    }
+                                }}
+                                items={transactionTypes.map(type => ({ label: type.NAME, value: type.ACCOUNT }))}
+                                placeholder="Select Payment Mode"
+                                enabled={!isSubmitting}
+                            />
+                            {validationErrors.accCode && (
+                                <Text style={styles.errorText}>{validationErrors.accCode}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity 
+                                style={[styles.button, isSubmitting && styles.buttonDisabled]} 
+                                onPress={handleSubmit}
+                                disabled={isSubmitting}
+                                activeOpacity={0.7}
+                            >
+                                {isSubmitting ? (
+                                    <View style={styles.loadingContainer}>
+                                        <ActivityIndicator color={colors1.buttonText} />
+                                        <Text style={[styles.buttonText, styles.loadingText]}>
+                                            Submitting...
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.buttonText}>Submit</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={[styles.button, styles.backButton, isSubmitting && styles.buttonDisabled]}
+                                onPress={() => setCurrentStep(1)}
+                                disabled={isSubmitting}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.buttonText}>Back</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+            default:
+                return null;
+        }
+    };
+
+    const handleMobileChange = (text) => {
+        const cleanedText = text.replace(/\D/g, '');
+        if (cleanedText.length <= 10) {
+            setMobile(cleanedText);
+            setIsMobileValid(/^[6-9]\d{9}$/.test(cleanedText) || cleanedText.length === 0);
+        }
+    };
+
+>>>>>>> Stashed changes
     return (
       <ValidatedInput
         label="City"
