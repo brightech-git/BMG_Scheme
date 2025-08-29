@@ -28,6 +28,8 @@ function Drawer() {
       <NavigationStack.Screen name='PaymentHistory' component={Screen.PaymentHistory}/>
       <NavigationStack.Screen name='MainPageWithYouTube' component={Screen.MainPageWithYouTube}/>
       <NavigationStack.Screen name='ProfileSidebar' component={Screen.ProfileSidebar}/>
+      <NavigationStack.Screen name='AboutPage' component={Screen.AboutPage}/>
+
     </NavigationStack.Navigator>
   );
 }

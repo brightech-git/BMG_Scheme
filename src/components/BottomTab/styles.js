@@ -11,6 +11,11 @@ const styles = StyleSheet.create({
     height: height * 0.08,
     flexDirection: 'row',
     backgroundColor: colors.white,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    // borderTopWidth: 1,
+    // borderTopColor: colors.lightGray,
+    // paddingHorizontal: scale(10),
     
   },
   footerBtnContainer: {

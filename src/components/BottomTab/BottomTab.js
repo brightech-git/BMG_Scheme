@@ -65,7 +65,7 @@ function BottomTab({ screen }) {
      
 
       {/* Profile Icon */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={() => {
          
             navigation.navigate('ProfileDashboard');
@@ -82,7 +82,7 @@ function BottomTab({ screen }) {
           
         </View>
         <Text style={getTextStyle('PROFILE')}>Menu</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }
