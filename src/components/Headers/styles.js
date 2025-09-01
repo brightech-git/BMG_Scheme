@@ -10,7 +10,7 @@ export default {
   container: {
     width: width,
     height: height * 0.10,
-    backgroundColor: colors.whiteColor,
+    // backgroundColor: colors.whiteColor,
     justifyContent: 'center',
     alignItems: 'center',
   },

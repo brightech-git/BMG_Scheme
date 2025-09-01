@@ -1,18 +1,15 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  SafeAreaView, 
-  FlatList, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  SafeAreaView,
+  FlatList,
+  StyleSheet,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
-  Alert,
   ActivityIndicator,
-  Animated,
   Share,
-  Platform
 } from 'react-native';
 import { BackHeader } from '../../components';
 import { alignment, colors, scale } from '../../utils';
@@ -23,16 +20,14 @@ import { colors1 } from '../../utils/colors';
 
 const SchemePassbook = ({ navigation, route }) => {
   const { productData, status, accountDetails } = route.params;
-  
-  // Enhanced state management
+
+  // State management
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showFullHistory, setShowFullHistory] = useState(false);
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
 
   const isDreamGoldPlan = accountDetails?.schemeSummary?.schemeName?.trim() === 'DREAM GOLD PLAN';
 
-  // Enhanced date formatting with error handling
+  // Date formatting
   const formatDate = useCallback((dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -48,43 +43,6 @@ const SchemePassbook = ({ navigation, route }) => {
     }
   }, []);
 
-  const formatDateTime = useCallback((dateTimeString) => {
-    if (!dateTimeString) return 'N/A';
-    try {
-      const date = new Date(dateTimeString);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-      return (
-        date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        }) +
-        ' ' +
-        date.toLocaleTimeString('en-GB', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        })
-      );
-    } catch (error) {
-      return 'Invalid Date';
-    }
-  }, []);
-
-  // Enhanced payment history with sorting
-  const paymentHistory = useMemo(() => {
-    let history = accountDetails?.paymentHistoryList || [];
-    
-    // Apply sorting
-    history.sort((a, b) => {
-      const dateA = new Date(a.updateTime || a.date);
-      const dateB = new Date(b.updateTime || b.date);
-      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-    });
-    
-    return history;
-  }, [accountDetails?.paymentHistoryList, sortOrder]);
-
   // Calculate scheme statistics
   const schemeStats = useMemo(() => {
     const totalPaid = parseFloat(productData?.amountWeight?.Amount || 0);
@@ -92,7 +50,7 @@ const SchemePassbook = ({ navigation, route }) => {
     const installmentsPaid = accountDetails?.schemeSummary?.schemaSummaryTransBalance?.insPaid || 0;
     const totalInstallments = accountDetails?.schemeSummary?.instalment || 0;
     const progressPercentage = totalInstallments > 0 ? (installmentsPaid / totalInstallments) * 100 : 0;
-    
+
     return {
       totalPaid,
       goldSaved,
@@ -102,13 +60,11 @@ const SchemePassbook = ({ navigation, route }) => {
     };
   }, [productData, accountDetails]);
 
-  // Pull-to-refresh functionality
+  // Pull-to-refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Simulate API call for refreshing data
       await new Promise(resolve => setTimeout(resolve, 1500));
-      // Here you would typically call an API to refresh the data
       console.log('Data refreshed');
     } catch (error) {
       Alert.alert('Error', 'Failed to refresh data. Please try again.');
@@ -136,74 +92,35 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
     }
   }, [productData, schemeStats, isDreamGoldPlan, formatDate]);
 
-  // Enhanced transaction card with animation
+  // Simplified payment history card
   const renderPaymentHistory = useCallback(({ item, index }) => {
-    const isLastItem = index === (showFullHistory ? paymentHistory.length - 1 : Math.min(2, paymentHistory.length - 1));
-    const status = item.status?.toLowerCase() || 'paid';
-    const isPaid = status === 'paid';
-
+    const isLastItem = index === Math.min(2, accountDetails?.paymentHistoryList?.length - 1);
     return (
-      <TouchableOpacity 
+      <View
         style={[
           styles.transactionCard,
           isLastItem && styles.lastCard,
-          !isPaid && styles.pendingCard
         ]}
-        activeOpacity={0.7}
-        onPress={() => {
-          // Navigate to transaction details or show more info
-          Alert.alert(
-            'Transaction Details',
-            `Installment: ${item.installment}\nAmount: ₹${item.amount}\nDate: ${formatDateTime(item.updateTime)}\nStatus: ${isPaid ? 'Paid' : 'Pending'}`,
-            [{ text: 'OK' }]
-          );
-        }}
       >
         <View style={styles.transactionLeft}>
-          <View style={[
-            styles.statusBadge, 
-            { backgroundColor: isPaid ? colors1.success : colors1.warning }
-          ]}>
-            <Icon 
-              name={isPaid ? "check-circle" : "clock-o"} 
-              size={20} 
-              color={colors.white} 
-            />
-          </View>
-          <View style={styles.transactionDetails}>
-            <Text style={styles.transactionDate}>{formatDateTime(item.updateTime)}</Text>
-            <Text style={styles.transactionInstallment}>Installment {item.installment}</Text>
-            {item.receiptNo && (
-              <Text style={styles.receiptNo}>Receipt: {item.receiptNo}</Text>
-            )}
-          </View>
+          <Text style={styles.transactionDate}>{formatDate(item.updateTime)}</Text>
+          <Text style={styles.transactionInstallment}>Installment {item.installment}</Text>
         </View>
         <View style={styles.transactionRight}>
-          <Text style={[
-            styles.transactionAmount,
-            !isPaid && { color: colors1.warning }
-          ]}>
-            ₹ {item.amount}
-          </Text>
-          <Text style={[
-            styles.statusText,
-            { color: isPaid ? colors1.success : colors1.warning }
-          ]}>
-            {isPaid ? 'Paid' : 'Pending'}
-          </Text>
+          <Text style={styles.transactionAmount}>₹ {item.amount}</Text>
         </View>
-      </TouchableOpacity>
+      </View>
     );
-  }, [paymentHistory.length, showFullHistory, formatDateTime]);
+  }, [formatDate]);
 
   // Progress bar component
   const ProgressBar = () => (
     <View style={styles.progressContainer}>
       <View style={styles.progressBarBackground}>
-        <View 
+        <View
           style={[
             styles.progressBarFill,
-            { width: `${schemeStats.progressPercentage}%` }
+            { width: `${schemeStats.progressPercentage}%` },
           ]}
         />
       </View>
@@ -215,7 +132,7 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -226,7 +143,6 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
           />
         }
       >
-        {/* Enhanced Header with Actions */}
         <LinearGradient
           colors={[colors1.primary, colors1.primaryDark]}
           style={styles.headerGradient}
@@ -237,35 +153,21 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
               backPressed={() => navigation.goBack()}
               titleColor={colors.white}
             />
-            <View style={styles.headerActions}>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={handleShare}
-              >
-                <MaterialIcons name="share" size={20} color={colors.white} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-              >
-                <MaterialIcons 
-                  name={sortOrder === 'desc' ? "keyboard-arrow-down" : "keyboard-arrow-up"} 
-                  size={20} 
-                  color={colors.white} 
-                />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleShare}
+            >
+              <MaterialIcons name="share" size={20} color={colors.white} />
+            </TouchableOpacity>
           </View>
-          
-          {/* Enhanced Header Card */}
+
           <View style={styles.headerCard}>
             <Text style={styles.schemeName}>
               {productData?.pname || 'Scheme Name'}
             </Text>
-            
-            {/* Progress Bar for Dream Gold Plan */}
+
             {isDreamGoldPlan && <ProgressBar />}
-            
+
             <View style={styles.headerStats}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
@@ -289,7 +191,6 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
         </LinearGradient>
 
         <View style={styles.content}>
-          {/* Enhanced Info Cards Section */}
           <View style={styles.infoCardsContainer}>
             <TouchableOpacity style={styles.infoCard}>
               <Icon name="calendar" size={20} color={colors1.primary} />
@@ -298,7 +199,7 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
                 {formatDate(productData?.joindate)}
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.infoCard}>
               <Icon name="calendar-check-o" size={20} color={colors1.primary} />
               <Text style={styles.infoCardLabel}>Maturity Date</Text>
@@ -306,7 +207,7 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
                 {formatDate(productData?.maturityDate)}
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.infoCard}>
               <Icon name="line-chart" size={20} color={colors1.primary} />
               <Text style={styles.infoCardLabel}>Avg Rate</Text>
@@ -316,24 +217,25 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
             </TouchableOpacity>
           </View>
 
-          {/* Enhanced Payment History Section */}
           <View style={styles.historySection}>
             <View style={styles.historyHeader}>
               <Text style={styles.historyTitle}>
-                Payment History ({paymentHistory.length})
+                Recent Payments ({accountDetails?.paymentHistoryList?.length || 0})
               </Text>
-              {paymentHistory.length > 3 && (
+              {accountDetails?.paymentHistoryList?.length > 0 && (
                 <TouchableOpacity
                   style={styles.viewAllButton}
-                  onPress={() => setShowFullHistory(!showFullHistory)}
+                    onPress={() => navigation.navigate('PaymentHistory', {
+    accountDetails: accountDetails,
+    schemeName: productData?.pname,
+  })
+  }
                 >
-                  <Text style={styles.viewAllText}>
-                    {showFullHistory ? 'Show Less' : 'View All'}
-                  </Text>
-                  <Icon 
-                    name={showFullHistory ? "chevron-up" : "chevron-right"} 
-                    size={12} 
-                    color={colors1.primary} 
+                  <Text style={styles.viewAllText}>View All</Text>
+                  <Icon
+                    name="chevron-right"
+                    size={12}
+                    color={colors1.primary}
                   />
                 </TouchableOpacity>
               )}
@@ -344,14 +246,13 @@ Maturity Date: ${formatDate(productData?.maturityDate)}`;
                 <ActivityIndicator size="large" color={colors1.primary} />
                 <Text style={styles.loadingText}>Loading transactions...</Text>
               </View>
-            ) : paymentHistory.length > 0 ? (
+            ) : accountDetails?.paymentHistoryList?.length > 0 ? (
               <View style={styles.transactionsList}>
-                {(showFullHistory ? paymentHistory : paymentHistory.slice(0, 3))
-                  .map((item, index) => (
-                    <View key={item.receiptNo || `${item.installment}-${index}`}>
-                      {renderPaymentHistory({ item, index })}
-                    </View>
-                  ))}
+                {accountDetails?.paymentHistoryList.slice(0, 3).map((item, index) => (
+                  <View key={item.receiptNo || `${item.installment}-${index}`}>
+                    {renderPaymentHistory({ item, index })}
+                  </View>
+                ))}
               </View>
             ) : (
               <View style={styles.emptyState}>
@@ -389,10 +290,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerActions: {
-    flexDirection: 'row',
-    marginRight: scale(20),
-  },
   actionButton: {
     width: scale(36),
     height: scale(36),
@@ -400,7 +297,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: scale(8),
+    marginRight: scale(20),
   },
   headerCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -548,34 +445,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors1.sectionBackground,
-    padding: scale(15),
-    borderRadius: scale(15),
-    marginBottom: scale(10),
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  pendingCard: {
-    borderColor: colors1.warning,
-    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+    padding: scale(12),
+    borderRadius: scale(12),
+    marginBottom: scale(8),
   },
   lastCard: {
     marginBottom: 0,
   },
   transactionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  statusBadge: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: scale(20),
-    backgroundColor: colors1.success,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scale(12),
-  },
-  transactionDetails: {
     flex: 1,
   },
   transactionDate: {
@@ -588,23 +465,13 @@ const styles = StyleSheet.create({
     fontSize: scale(12),
     color: colors1.textSecondary,
   },
-  receiptNo: {
-    fontSize: scale(10),
-    color: colors1.textSecondary,
-    marginTop: scale(2),
-  },
   transactionRight: {
     alignItems: 'flex-end',
   },
   transactionAmount: {
-    fontSize: scale(16),
-    fontWeight: '700',
+    fontSize: scale(14),
+    fontWeight: '600',
     color: colors1.primary,
-    marginBottom: scale(2),
-  },
-  statusText: {
-    fontSize: scale(11),
-    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',

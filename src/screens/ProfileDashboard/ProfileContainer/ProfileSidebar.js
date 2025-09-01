@@ -106,7 +106,7 @@ const DrawerMenu = ({ isVisible, onClose }) => {
       icon: "description",
       route: "TermsandCondition",
     },
-    // { label: 'Change Language', icon: 'translate', route: 'ChangeLanguage', iconType: 'MaterialIcons' },
+    { label: 'Delete Account', icon: 'delete', route: 'DeleteButton', iconType: 'MaterialIcons' },
     // { label: 'My Profile', icon: 'account-circle', route: 'MyProfile', iconType: 'MaterialIcons' },
     // { label: 'Change MPIN', icon: 'lock', route: 'ChangeMPIN', iconType: 'MaterialIcons' },
     // { label: 'Set Savings Target', icon: 'track-changes', route: 'SavingsTarget', iconType: 'MaterialIcons' },

@@ -22,7 +22,26 @@ const colors = {
   cardBackground: '#FFFFFF',
 };
 
-export default function EnhancedSlider({ navigation }) {
+// Define your desired fallback URLs
+const FALLBACK_BANNERS = [
+  {
+    id: 1,
+    image_path: '/images/banner1.jpg',
+    url: 'https://bmgjewellers.com/shop-left?itemName=EARRINGS'
+  },
+  {
+    id: 2,
+    image_path: '/images/banner2.jpg',
+    url: 'https://bmgjewellers.com/shop-left?itemName=NECKLACES'
+  },
+  {
+    id: 3,
+    image_path: '/images/banner3.jpg',
+    url: 'https://bmgjewellers.com/shop-left?itemName=FESTIVAL'
+  }
+];
+
+export default function EnhancedSlider() {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -39,37 +58,30 @@ export default function EnhancedSlider({ navigation }) {
         const response = await fetch('https://app.bmgjewellers.com/api/v1/App_banner/list');
         const data = await response.json();
         
-        // If your API doesn't return URLs, you can add them here
-        // For demonstration, I'm adding sample URLs
-        const bannersWithUrls = data.map((banner, index) => ({
-          ...banner,
-          // Use the URL from API if available, otherwise use these sample URLs
-          url: banner.url || `https://bmgjewellers.com/${index === 0 ? 'collections' : index === 1 ? 'new-arrivals' : 'sale'}`
-        }));
+        // console.log('API Response:', data); // Debug log
         
+        // Map API data to use your desired fallback URLs
+        const bannersWithUrls = data.map((banner, index) => {
+          // Use the corresponding fallback URL based on index
+          const fallbackBanner = FALLBACK_BANNERS[index] || FALLBACK_BANNERS[0];
+          
+          return {
+            ...banner,
+            // Use the URL from fallback banners, not from API
+            url: fallbackBanner.url,
+            // Make sure we use the correct image path from API
+            image_path: banner.image_path
+          };
+        });
+        
+        // console.log('Processed banners:', bannersWithUrls); // Debug log
         setBanners(bannersWithUrls);
       } catch (error) {
         console.error('Error fetching banners:', error);
         
-        // Fallback data in case API fails
-        const fallbackBanners = [
-          {
-            id: 1,
-            image_path: '/images/banner1.jpg',
-            url: 'https://bmgjewellers.com/shop-left?itemName=EARRINGS'
-          },
-          {
-            id: 2,
-            image_path: '/images/banner2.jpg',
-            url: 'https://bmgjewellers.com/shop-left?itemName=NECKLACES'
-          },
-          {
-            id: 3,
-            image_path: '/images/banner3.jpg',
-            url: 'https://bmgjewellers.com/shop-left?itemName=FESTIVAL'
-          }
-        ];
-        setBanners(fallbackBanners);
+        // Use fallback data in case API fails
+        // console.log('Using fallback banners:', FALLBACK_BANNERS);
+        setBanners(FALLBACK_BANNERS);
       } finally {
         setLoading(false);
       }
@@ -116,26 +128,15 @@ export default function EnhancedSlider({ navigation }) {
   };
 
   const handleBannerPress = (url) => {
-    // You can use either external linking or internal navigation
-    // Option 1: Open external URL
+    console.log('Opening URL:', url); // Debug log
+    // Directly open the URL in the device's browser
     Linking.openURL(url).catch(err => console.error('Failed to open URL:', err));
-    
-    // Option 2: Navigate internally (if you have set up navigation)
-    // For example, if you have a WebView screen:
-    // navigation.navigate('BannerWebView', { url });
-    
-    // Option 3: Navigate to different screens based on URL
-    // if (url.includes('collections')) {
-    //   navigation.navigate('Collections');
-    // } else if (url.includes('new-arrivals')) {
-    //   navigation.navigate('NewArrivals');
-    // } else if (url.includes('sale')) {
-    //   navigation.navigate('Sale');
-    // }
   };
 
   const renderSliderItem = ({ item }) => {
     const imageUrl = `https://app.bmgjewellers.com${item.image_path}`;
+    // console.log('Image URL:', imageUrl, 'Target URL:', item.url); // Debug log
+    
     return (
       <TouchableOpacity
         style={styles.sliderItem}

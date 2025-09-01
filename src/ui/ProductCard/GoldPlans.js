@@ -11,9 +11,9 @@ function GoldPlan(props) {
   const navigation = useNavigation();
 
   // ✅ Only render schemeId = 5 (Dream Gold Plan)
-  if (schemeId !== 5) {
-    return null;
-  }
+  // if (schemeId !== 5) {
+    // return null;
+  // }
 
   return (
     <TouchableOpacity style={[styles.cardContainer, props.styles]}>
