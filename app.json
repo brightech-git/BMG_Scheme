@@ -2,7 +2,7 @@
   "expo": {
     "name": "BMG_SCHEME",
     "slug": "akj-8",
-    "version": "1.0.0",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -22,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.bmg.bmgscheme"
+      "package": "com.bmg.bmgscheme",
+      "versionCode": 9
     },
     "web": {
       "favicon": "./assets/icon.png"
