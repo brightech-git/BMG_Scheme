@@ -582,7 +582,7 @@ function MainLanding() {
   return (
     <SafeAreaView style={[styles.flex, styles.safeAreaStyle]}>
       <ImageBackground
-        source={require("../../assets/bg.jpg")}
+        source={require("../../assets/bg2.jpg")}
         style={styles.mainBackground}
         imageStyle={styles.backgroundImageStyle}
       >

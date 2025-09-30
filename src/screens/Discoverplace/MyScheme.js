@@ -141,7 +141,7 @@ function DiscoverPlace({ navigation }) {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require('../../assets/bg.jpg')}
+        source={require('../../assets/bg2.jpg')}
         style={styles.mainBackground}
         imageStyle={styles.backgroundImageStyle}
       >

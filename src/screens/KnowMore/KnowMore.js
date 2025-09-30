@@ -20,7 +20,7 @@ function KnowMore() {
 
   return (
     <ImageBackground
-      source={require("../../assets/bg.jpg")}
+      source={require("../../assets/bg2.jpg")}
       style={styles.backgroundImage}
       resizeMode="cover"
     >

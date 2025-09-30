@@ -14,7 +14,7 @@ export default StyleSheet.create({
   // ─── Base Styles ──────────────────────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: colors.white
+    // backgroundColor: colors.white
   },
   animatedBackground: {
     position: 'absolute',

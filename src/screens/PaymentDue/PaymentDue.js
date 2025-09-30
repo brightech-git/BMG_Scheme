@@ -662,7 +662,7 @@ const paidDues = dues.filter(due => due.status === 'Paid');
   return (
     <SafeAreaView style={styles.container}>
       <ImageBackground
-        source={require('../../assets/bg.jpg')}
+        source={require('../../assets/bg2.jpg')}
         style={styles.mainBackground}
         imageStyle={styles.backgroundImageStyle}
       >

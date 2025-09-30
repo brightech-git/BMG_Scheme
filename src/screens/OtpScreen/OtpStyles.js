@@ -1,148 +1,248 @@
-// OTPStyles.js
-import { StyleSheet } from 'react-native';
-import { scale, verticalScale } from '../../utils/scaling';
-import { colors } from '../../utils/colors';
+import { StyleSheet, Platform } from 'react-native';
+import appTheme from '../../utils/Theme';
 
-export const styles = StyleSheet.create({
+const { COLORS, SIZES, FONTS, moderateScale, verticalScale } = appTheme;
+
+const styles = StyleSheet.create({
+  // Background & Container
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+    paddingTop: verticalScale(20),
+  },
   container: {
     flex: 1,
     alignItems: 'center',
-    padding: scale(20),
-    backgroundColor: '#F9F9F9',
+    justifyContent: 'flex-start',
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: verticalScale(10),
   },
-  welcomeText: {
-    fontSize: scale(18),
-    fontWeight: '500',
-    color: colors.gray,
-    textAlign: 'center',
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(10),
-     fontFamily: 'TrajanPro-Bold',
+
+  // Logo Section
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: verticalScale(15),
+    marginTop: verticalScale(-25),
   },
   logoImage: {
-    width: scale(180),
-    height: scale(180),
+    width: moderateScale(120),
+    height: moderateScale(120),
     resizeMode: 'contain',
-    marginBottom: verticalScale(10),
   },
+
+  // Card Container
+  card: {
+    width: '100%',
+    maxWidth: moderateScale(380),
+    backgroundColor: COLORS.card,
+    borderRadius: SIZES.radius,
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: verticalScale(20),
+    shadowColor: COLORS.shadow,
+    shadowOffset: {
+      width: 0,
+      height: moderateScale(6),
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: moderateScale(12),
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    marginTop: verticalScale(5),
+  },
+
+  // Typography
   title: {
-    fontSize: scale(22),
-    // fontWeight: '700',
-    color: colors.black,
-    marginBottom: verticalScale(18),
-     fontFamily: 'TrajanPro-Bold',
+    ...FONTS.h4,
+    textAlign: 'center',
+    marginBottom: verticalScale(4),
+    color: COLORS.primary,
   },
   subtitle: {
-    fontSize: scale(14),
-    color: colors.gray,
-    marginBottom: verticalScale(20),
-     fontFamily: 'TrajanPro-Bold',
+    ...FONTS.body,
+    textAlign: 'center',
+    marginBottom: verticalScale(24),
+    color: COLORS.textLight,
+    lineHeight: moderateScale(20),
+    fontSize: SIZES.h5,
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    borderWidth: 1,
-    borderColor: colors.lightGray,
-    borderRadius: scale(10),
-    paddingHorizontal: scale(10),
-    backgroundColor: colors.white,
-    marginBottom: verticalScale(10),
-  },
-  inputError: {
-    borderColor: colors.red,
-  },
-  errorText: {
-    color: colors.red,
-    fontSize: scale(12),
-    alignSelf: 'flex-start',
-    marginBottom: verticalScale(10),
-     fontFamily: 'TrajanPro-Bold',
-  },
-  prefix: {
-    fontSize: scale(16),
-    color: colors.black,
-    marginRight: scale(10),
-     fontFamily: 'TrajanPro-Bold',
-  },
-  input: {
-    flex: 1,
-    height: scale(45),
-    fontSize: scale(16),
-    color: colors.black,
-     fontFamily: 'TrajanPro-Bold',
-  },
-  continueButton: {
-    width: '100%',
-    height: scale(45),
-    borderRadius: scale(10),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: verticalScale(10),
-    marginBottom: verticalScale(30),
-     backgroundColor: colors.ButtonColor,
+ linkContainer: {
+  borderRadius: SIZES.radius_sm,
+  paddingVertical: verticalScale(8),
+  paddingHorizontal: moderateScale(12),
+  marginBottom: verticalScale(16),
+  alignItems: 'center',
+  justifyContent: 'center',
+},
 
-  },
-  continueText: {
-    color: colors.white,
-    fontSize: scale(16),
-    // fontWeight: 'bold',
-     fontFamily: 'TrajanPro-Bold',
-  },
-  otpLabel: {
-    fontSize: scale(16),
-    // fontWeight: '500',
-    marginBottom: verticalScale(10),
-    color: colors.black,
-     fontFamily: 'TrajanPro-Bold',
-  },
+linkText: {
+  ...FONTS.subheading,
+  textAlign: 'center',
+  color: COLORS.primary,
+  fontWeight: '600',
+  textDecorationLine: 'underline', // makes it look like a link
+  letterSpacing: 0.3,
+},
+
+
+  // OTP Container
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '80%',
-    marginBottom: verticalScale(20),
+    marginBottom: verticalScale(24),
+    marginTop: verticalScale(16),
+  },
+  otpInputWrapper: {
+    width: moderateScale(44),
+    height: moderateScale(50),
+    borderRadius: SIZES.radius_sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.shadow,
+    shadowOffset: {
+      width: 0,
+      height: moderateScale(2),
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: moderateScale(4),
+    elevation: 3,
   },
   otpInput: {
-    width: scale(45),
-    height: scale(50),
-    borderWidth: 1,
-    borderColor: colors.lightGray,
-    borderRadius: scale(8),
-    textAlign: 'center',
-    fontSize: scale(18),
-    backgroundColor: colors.white,
+    width: '100%',
+    height: '100%',
+    fontSize: SIZES.h4,
+    color: COLORS.white,
+    ...FONTS.body1,
+    fontWeight: '600',
   },
-  otpFooter: {
+
+  // Buttons
+  primaryButton: {
+    borderRadius: SIZES.radius_sm,
+    marginTop: verticalScale(16),
+    overflow: 'hidden',
+    shadowColor: COLORS.shadow,
+    shadowOffset: {
+      width: 0,
+      height: moderateScale(3),
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: moderateScale(6),
+    elevation: 5,
+  },
+  buttonGradient: {
+    paddingVertical: verticalScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: verticalScale(44),
+  },
+  primaryButtonText: {
+    ...FONTS.body1,
+    fontWeight: '600',
+    color: COLORS.white,
+    fontSize: SIZES.font,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+
+  // Resend OTP
+  resendContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    width: '80%',
-    marginBottom: verticalScale(20),
-   
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: verticalScale(20),
+    paddingVertical: verticalScale(8),
   },
   resendText: {
-    color: colors.errorColor,
-    fontSize: scale(14),
-    // fontWeight: '600',
+    ...FONTS.body1,
+    color: COLORS.textLight,
+    
+  },
+  resendLink: {
+    ...FONTS.body1,
+    color: COLORS.danger,
+    fontWeight: '600',
     textDecorationLine: 'underline',
-     fontFamily: 'TrajanPro-Bold',
   },
-  timerText: {
-    color: colors.gray,
-    fontSize: scale(14),
-    // fontWeight: '500',
-     fontFamily: 'TrajanPro-Bold',
-  },
-  signupWrapper: {
-    marginTop: verticalScale(10),
-  },
-  signupText: {
-    color: colors.gray,
-    fontSize: scale(14),
-     fontFamily: 'TrajanPro-Bold',
-  },
-  signupLink: {
-    color:"red",
-    // fontWeight: '600',
-     fontFamily: 'TrajanPro-Bold',
+  resendDisabled: {
+    color: COLORS.textLight,
   },
 });
+
+// Platform-specific adjustments
+if (Platform.OS === 'web') {
+  styles.card = {
+    ...styles.card,
+    cursor: 'default',
+    maxHeight: verticalScale(450),
+  };
+  
+  styles.primaryButton = {
+    ...styles.primaryButton,
+    cursor: 'pointer',
+  };
+  
+  styles.resendContainer = {
+    ...styles.resendContainer,
+    cursor: 'pointer',
+  };
+  
+  styles.scrollContainer = {
+    ...styles.scrollContainer,
+    paddingTop: verticalScale(10),
+  };
+}
+
+// Additional responsive adjustments for small screens
+if (SIZES.height < 600) {
+  styles.scrollContainer = {
+    ...styles.scrollContainer,
+    paddingTop: verticalScale(10),
+  };
+  
+  styles.container = {
+    ...styles.container,
+    paddingVertical: verticalScale(5),
+  };
+  
+  styles.card = {
+    ...styles.card,
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: moderateScale(16),
+  };
+  
+  styles.logoImage = {
+    ...styles.logoImage,
+    width: moderateScale(70),
+    height: moderateScale(70),
+  };
+  
+  styles.title = {
+    ...styles.title,
+    fontSize: moderateScale(20),
+    marginBottom: verticalScale(2),
+  };
+  
+  styles.otpInputWrapper = {
+    ...styles.otpInputWrapper,
+    width: moderateScale(40),
+    height: moderateScale(46),
+  };
+}
+
+// For large screens
+if (SIZES.height > 800) {
+  styles.card = {
+    ...styles.card,
+    maxWidth: moderateScale(360),
+  };
+}
+
+export default styles;

@@ -5,17 +5,26 @@ import { colors } from './src/utils/colors';
 import FlashMessage from 'react-native-flash-message';
 import * as Notifications from 'expo-notifications';
 import { registerForPushNotificationsAsync } from './src/utils/Notification';
+import useFonts from './src/utils/Fonts' // import your font loader
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
   const [expoPushToken, setExpoPushToken] = useState('');
+  const [fontsLoaded, setFontsLoaded] = useState(false); // state to track fonts
   const notificationListener = useRef();
   const responseListener = useRef();
 
   useEffect(() => {
-    // Get token
+    // Load fonts
+    const loadAppFonts = async () => {
+      await useFonts();
+      setFontsLoaded(true);
+    };
+    loadAppFonts();
+
+    // Push notification setup
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
 
-    // Listen for notifications
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       console.log('Notification Received:', notification);
     });
@@ -30,14 +39,14 @@ export default function App() {
     };
   }, []);
 
+  if (!fontsLoaded) return null; // optionally show a splash screen
+
   return (
     <>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={colors.headerbackground}
-      />
-      <AppContainer />
-      <FlashMessage position="top" />
+      <SafeAreaView style={{ flex: 1 }}>
+        <AppContainer />
+        <FlashMessage position="top" />
+      </SafeAreaView>
     </>
   );
 }

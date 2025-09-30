@@ -20,6 +20,8 @@ import PaymentHistory from './PaymentHistory/PaymentHistory'
 import MainPageWithYouTube from './Youtube/Youtube'
 import ProfileSidebar from './ProfileDashboard/ProfileContainer/ProfileSidebar'
 import AboutPage from './About/About'
+import RegisterPage from './OtpScreen/RegisterPage'
+import LoginPage from './OtpScreen/LoginPage'
 
 export {
   MainLanding,
@@ -42,5 +44,7 @@ export {
   PaymentHistory,
   MainPageWithYouTube,
   ProfileSidebar,
-  AboutPage
+  AboutPage,
+  RegisterPage,
+  LoginPage
 }

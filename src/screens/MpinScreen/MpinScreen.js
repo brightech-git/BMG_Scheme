@@ -63,7 +63,7 @@ function MpinScreen({ route, navigation }) {
     try {
       const isMpinCreated = await AsyncStorage.getItem('isMpinCreated');
       if (isMpinCreated === 'true') {
-        navigation.replace('VerifyMpin');
+        navigation.replace('VerifyMpinScreen');
       }
     } catch (error) {
       console.error('Error checking MPIN creation:', error);
@@ -141,7 +141,7 @@ function MpinScreen({ route, navigation }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/bg.jpg')}
+      source={require('../../assets/bg2.jpg')}
       style={styles.backgroundImage}
     >
       <KeyboardAvoidingView
@@ -327,7 +327,11 @@ function VerifyMpinScreen({ navigation }) {
   };
 
   return (
-      <KeyboardAvoidingView
+    <ImageBackground
+      source={require('../../assets/bg2.jpg')}
+      style={styles.backgroundImage}
+    >  
+       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
@@ -393,7 +397,7 @@ function VerifyMpinScreen({ navigation }) {
 
             <View style={styles.actionSection}>
               <TouchableOpacity 
-                onPress={() => navigation.navigate('OTP')}
+                onPress={() => navigation.navigate('LoginPage')}
                 style={styles.forgotButton}
               >
                 <TextDefault style={styles.forgotText}>
@@ -421,6 +425,8 @@ function VerifyMpinScreen({ navigation }) {
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+      </ImageBackground>
+ 
    
   );
 }
@@ -432,7 +438,7 @@ const styles = StyleSheet.create({
   },
   keyboardContainer: {
     flex: 1,
-     backgroundColor: colors1.background,
+    //  backgroundColor: colors1.background,
   },
   container: {
     flex: 1,

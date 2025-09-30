@@ -7,7 +7,6 @@ import * as Screen from '../screens';
 const MainStack = createStackNavigator();
 const NavigationStack = createStackNavigator();
 
-
 function Drawer() {
   return (
     <NavigationStack.Navigator screenOptions={{ headerShown: false }}>
@@ -29,7 +28,7 @@ function Drawer() {
       <NavigationStack.Screen name='MainPageWithYouTube' component={Screen.MainPageWithYouTube}/>
       <NavigationStack.Screen name='ProfileSidebar' component={Screen.ProfileSidebar}/>
       <NavigationStack.Screen name='AboutPage' component={Screen.AboutPage}/>
-
+      {/* Removed RegisterPage and LoginPage from here */}
     </NavigationStack.Navigator>
   );
 }
@@ -44,11 +43,11 @@ function AppContainer() {
         if (isMpinCreated === 'true') {
           setInitialRoute('VerifyMpinScreen'); 
         } else {
-          setInitialRoute('OTP'); 
+          setInitialRoute('LoginPage'); // Changed from 'OTP' to 'LoginPage'
         }
       } catch (error) {
         console.error('Error checking user state:', error);
-        setInitialRoute('OTP'); 
+        setInitialRoute('LoginPage'); // Changed from 'OTP' to 'LoginPage'
       }
     };
 
@@ -62,9 +61,16 @@ function AppContainer() {
   return (
     <NavigationContainer>
       <MainStack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
-      <MainStack.Screen name="OTP" component={Screen.OTP} />
+        {/* Auth Screens in MainStack */}
+        <MainStack.Screen name="LoginPage" component={Screen.LoginPage} />
+        <MainStack.Screen name="RegisterPage" component={Screen.RegisterPage} />
+        <MainStack.Screen name="OTP" component={Screen.OTP} />
+        
+        {/* MPIN Screens */}
         <MainStack.Screen name="MpinScreen" component={Screen.MpinScreen} />
         <MainStack.Screen name="VerifyMpinScreen" component={Screen.VerifyMpinScreen} />
+        
+        {/* Main App */}
         <MainStack.Screen name="Drawer" component={Drawer} />
       </MainStack.Navigator>
     </NavigationContainer>
