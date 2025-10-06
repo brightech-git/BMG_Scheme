@@ -55,7 +55,8 @@ function RegisterPage({ navigation }) {
       username, 
       email, 
       contactNumber: phone, 
-      password 
+      password ,
+       hashKey:"d4riq2SwBaq"
     });
 
     if (res.success) {

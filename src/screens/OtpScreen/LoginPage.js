@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { showToast } from "../../utils/toast";
 import appTheme from "../../utils/Theme";
 import styles from "./LoginStyles.js";
@@ -27,14 +28,115 @@ function LoginPage({ route }) {
   const [contactOrEmailOrUsername, setContactOrEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigation = useNavigation();
 
+  // ✅ Google Sign-In Configuration
   useEffect(() => {
-    if (route.params?.prefillPhone) {
-      setContactOrEmailOrUsername(route.params.prefillPhone);
+    try {
+      GoogleSignin.configure({
+        webClientId: "657047091285-hetgcscq8hvli59d0c6oqvg9aoat8850.apps.googleusercontent.com",
+        iosClientId: "657047091285-57kkictc0pkfjldtf0u133m82huit6rg.apps.googleusercontent.com",
+        scopes: ["profile", "email"],
+        offlineAccess: true,
+      });
+    } catch (error) {
+      console.error("Google SignIn configuration error:", error);
     }
-  }, [route.params?.prefillPhone]);
+  }, []);
 
+  // ✅ Handle Google Sign-In
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+
+      const hasPlayServices = await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+      if (!hasPlayServices) throw new Error("Google Play Services not available");
+
+      await GoogleSignin.signOut(); // Clear previous session
+      const userInfo = await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+
+      let idToken = tokens?.idToken || userInfo?.idToken;
+      if (!idToken) throw new Error("No ID token received from Google");
+
+      await handleGoogleAuthentication(idToken, userInfo.user);
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+      handleGoogleSignInError(error);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleSignInError = (error) => {
+    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+      showToast("Google sign-in was cancelled");
+    } else if (error.code === statusCodes.IN_PROGRESS) {
+      showToast("Google sign-in is already in progress");
+    } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      showToast("Google Play Services not available");
+    } else if (error.code === statusCodes.SIGN_IN_REQUIRED) {
+      showToast("Please sign in to continue");
+    } else {
+      showToast(`Google sign-in failed: ${error.message || "Try again"}`);
+    }
+  };
+
+  // ✅ Google Authentication → Backend
+  const handleGoogleAuthentication = async (idToken, userInfo = null) => {
+    try {
+      const payload = { idToken };
+      if (userInfo) {
+        payload.userInfo = {
+          email: userInfo.email,
+          name: userInfo.name,
+          photo: userInfo.photo,
+        };
+      }
+
+      const response = await userService.googleLogin(payload);
+
+      if (response.success && response.data) {
+        const {
+          token,
+          id,
+          email,
+          username,
+          contactNumber,
+          picture,
+          socialMedia,
+          message,
+          status,
+        } = response.data;
+
+        await AsyncStorage.multiSet([
+          ["authToken", token],
+          ["userId", String(id)],
+          ["userEmail", email || ""],
+          ["username", username || ""],
+          ["userPhoneNumber", contactNumber || ""],
+          ["userPicture", picture || ""],
+          ["socialMedia", socialMedia || ""],
+          ["userStatus", status || ""],
+          ["userMessage", message || ""],
+          ["userData", JSON.stringify(response.data)],
+        ]);
+
+        showToast(message || "Logged in successfully with Google");
+        navigation.navigate("MpinScreen", { step: 3 });
+      } else {
+        showToast(response.error || "Google authentication failed");
+      }
+    } catch (error) {
+      console.error("Google authentication error:", error);
+      showToast("Authentication failed. Please try again.");
+    }
+  };
+
+  // ✅ Regular Login
   const handleLogin = async () => {
     if (!contactOrEmailOrUsername || !password) {
       return showToast("Please enter email/username and password");
@@ -51,9 +153,9 @@ function LoginPage({ route }) {
         const data = res.data;
         await AsyncStorage.setItem("authToken", data.token);
         await AsyncStorage.setItem("userId", String(data.id));
-        await AsyncStorage.setItem("userEmail", data.email);
-        await AsyncStorage.setItem("userName", data.username);
-        await AsyncStorage.setItem("userPhoneNumber", data.contact);
+        await AsyncStorage.setItem("userEmail", data.email || "");
+        await AsyncStorage.setItem("userName", data.username || "");
+        await AsyncStorage.setItem("userPhoneNumber", data.contact || "");
         await AsyncStorage.setItem("userData", JSON.stringify(data));
 
         showToast("Login successful!");
@@ -68,24 +170,12 @@ function LoginPage({ route }) {
     }
   };
 
-  const navigateToRegister = () => {
-    navigation.navigate("RegisterPage");
-  };
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
+  const navigateToRegister = () => navigation.navigate("RegisterPage");
+  const dismissKeyboard = () => Keyboard.dismiss();
 
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <ImageBackground source={require("../../assets/bg4.jpg")} style={styles.backgroundImage}>
-      {/* <LinearGradient
-        colors={
-          loading
-            ? ["#555", "#444"]
-            : [COLORS.gradientcolor7, COLORS.gradientcolor8]
-        }
-        style={styles.backgroundImage}
-      > */}
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -98,10 +188,7 @@ function LoginPage({ route }) {
           >
             <View style={styles.container}>
               <View style={styles.logoContainer}>
-                <Image
-                  source={require("../../assets/image/logo4.png")}
-                  style={styles.logoImage}
-                />
+                <Image source={require("../../assets/image/logo4.png")} style={styles.logoImage} />
               </View>
 
               <View style={styles.card}>
@@ -128,20 +215,14 @@ function LoginPage({ route }) {
                   secureTextEntry
                 />
 
+                {/* ✅ Regular Login Button */}
                 <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    loading && styles.disabledButton,
-                  ]}
+                  style={[styles.primaryButton, loading && styles.disabledButton]}
                   onPress={handleLogin}
                   disabled={loading}
                 >
                   <LinearGradient
-                    colors={
-                      loading
-                        ? ["#555", "#444"]
-                        : [COLORS.gradientcolor7, COLORS.gradientcolor8]
-                    }
+                    colors={loading ? ["#555", "#444"] : [COLORS.gradientcolor7, COLORS.gradientcolor8]}
                     style={styles.buttonGradient}
                   >
                     {loading ? (
@@ -152,18 +233,56 @@ function LoginPage({ route }) {
                   </LinearGradient>
                 </TouchableOpacity>
 
+                {/* ✅ Divider */}
+                <View style={styles.dividerContainer}>
+                  <View style={styles.divider} />
+                  <Text style={styles.dividerText}>or continue with</Text>
+                  <View style={styles.divider} />
+                </View>
+
+                {/* ✅ Google Sign-In Button */}
                 <TouchableOpacity
-                  onPress={navigateToRegister}
-                  style={{ flexDirection: "row", justifyContent: "center" }}
+                  style={[styles.googleButton, googleLoading && styles.disabledButton]}
+                  onPress={handleGoogleSignIn}
+                  disabled={googleLoading}
                 >
-                  <Text style={styles.linkText}>Don't have an account? </Text>
+                  {googleLoading ? (
+                    <ActivityIndicator color={COLORS.primary} />
+                  ) : (
+                    <>
+                    <View sstyle={styles.Google}>
+                      <View>
+                      <Image
+                        source={require("../../assets/icons/google.png")}
+                        style={styles.googleIcon}
+                      />
+                      </View>
+                      <View>
+                      <Text style={styles.googleButtonText}>Continue with Google</Text>
+                  </View>
+                   </View>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* ✅ Register link */}
+                <TouchableOpacity onPress={navigateToRegister} style={{ flexDirection: "row", justifyContent: "center" }}>
+                  <Text style={styles.linkText}>Don't have an account?</Text>
                   <Text style={styles.linkText1}> Register</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      {/* </LinearGradient> */}
+
+        {(loading || googleLoading) && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>
+              {googleLoading ? "Signing in with Google..." : "Processing..."}
+            </Text>
+          </View>
+        )}
       </ImageBackground>
     </TouchableWithoutFeedback>
   );

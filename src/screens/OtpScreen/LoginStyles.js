@@ -159,7 +159,15 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.7,
+    
   },
+  googleIcon:{
+    width:40,
+    height:40
+  },
+  Google:{
+    flexDirection:"row"
+  }
 });
 
 // Platform-specific adjustments

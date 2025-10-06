@@ -106,6 +106,27 @@ const userService = {
   getProfile: async () => {
     return request(`${API_BASE_URL}/user/profile`);
   },
+
+    // ✅ Google Login
+  googleLogin: async (payload) => {
+    console.log("Google Login Payload:", payload);
+    const res = await request(
+      `${API_BASE_URL}/google-login`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      false // ❌ no auth header for google login
+    );
+    console.log("Payload",payload)
+    console.log("Google Login Response:", res);
+
+    if (res.success && res.data?.token) {
+      await AsyncStorage.setItem("authToken", res.data.token);
+    }
+
+    return res;
+  },
 };
 
 export default userService;
