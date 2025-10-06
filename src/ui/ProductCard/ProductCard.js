@@ -1,14 +1,15 @@
-import React from 'react'
+import React from 'react';
 import {
   View,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator
-} from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
-import { TextDefault } from '../../components'
-import { alignment, colors, scale } from '../../utils'
-import { colors1 } from '../../utils/colors'
+  ActivityIndicator,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { TextDefault } from '../../components';
+import { colors, scale } from '../../utils';
+import { COLORS, SIZES, FONTS, moderateScale } from '../../utils/Theme';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 function ProductCard({
   productData,
@@ -16,351 +17,317 @@ function ProductCard({
   error,
   navigation,
   status,
-  accountDetails
+  accountDetails,
 }) {
   if (loading) {
     return (
-      <ActivityIndicator
-        size='large'
-        color={colors.greenColor}
-        style={{ marginTop: 20 }}
-      />
-    )
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
   }
 
   if (error) {
     return (
-      <View style={{ alignItems: 'center', marginTop: 20 }}>
-        <TextDefault style={{ color: colors.redColor }}>{error}</TextDefault>
+      <View style={styles.errorContainer}>
+        <MaterialIcons name="error-outline" size={40} color={COLORS.danger} />
+        <TextDefault style={styles.errorText}>{error}</TextDefault>
       </View>
-    )
+    );
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
-    const date = new Date(dateString)
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
-    })
-  }
+      year: 'numeric',
+    });
+  };
 
   const isDreamGoldPlan =
-    accountDetails?.schemeSummary?.schemeName?.trim() === 'DREAM GOLD PLAN'
+    accountDetails?.schemeSummary?.schemeName?.trim() === 'DREAM GOLD PLAN';
 
   return (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.8}
       onPress={() =>
         navigation.navigate('ProductDescription', {
           productData,
           status,
-          accountDetails
+          accountDetails,
         })
       }
       style={styles.cardContainer}
     >
-      {/* 🔥 Gradient Background */}
       <LinearGradient
-        colors={[colors1.gradientcolor2, colors1.gradientcolor1]}
-        start={{ x: 0, y: 0 }} // Top
-        end={{ x: 0, y: 1 }} // Bottom
+        colors={COLORS.gradientPrimary}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={styles.gradientBackground}
       >
-        {/* Top Section */}
-        <View style={styles.topSection}>
-          <View>
-            <TextDefault style={styles.text} bold>
-              {productData.groupcode} - {productData.regno}
-              {isDreamGoldPlan && (
-                <TextDefault style={[styles.text, { marginLeft: 10 }]}>
-                  / ₹{accountDetails?.amount || 0}
-                </TextDefault>
-              )}
-            </TextDefault>
-            <TextDefault style={styles.text}>{productData.pname}</TextDefault>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerLeft}>
+            <View style={styles.iconBadge}>
+              <MaterialIcons name="account-balance" size={18} color={COLORS.primary} />
+            </View>
+            <View style={styles.headerInfo}>
+              <TextDefault style={styles.schemeCode}>
+                {productData.groupcode} - {productData.regno}
+              </TextDefault>
+              <TextDefault style={styles.schemeName} numberOfLines={1}>
+                {productData.pname}
+              </TextDefault>
+            </View>
           </View>
-          <View style={styles.rightTop}>
-            <TextDefault style={styles.text} bold>
-              {accountDetails?.schemeSummary?.schemeName?.trim()}
-            </TextDefault>
-          </View>
+          
+          {status && (
+            <View style={[
+              styles.statusBadge,
+              { backgroundColor: status === 'Active' ? COLORS.success : COLORS.danger }
+            ]}>
+              <TextDefault style={styles.statusText}>{status}</TextDefault>
+            </View>
+          )}
         </View>
 
-        {/* Status Section */}
-        <View style={styles.statusContainer}>
-          <TextDefault style={styles.text} bold>
-            {status}
-          </TextDefault>
-          <View
-            style={[
-              styles.statusDot,
-              { backgroundColor: status === 'Active' ? '#4CAF50' : '#F44336' }
-            ]}
-          />
-        </View>
-
-        {/* Center Section */}
-        <View style={styles.centerSection}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerTextContainer}>
-              <TextDefault style={[styles.text, styles.headerText]}>
-                {isDreamGoldPlan ? 'Ins Paid' : 'Weight Saved*'}
-              </TextDefault>
-            </View>
-            <View style={styles.headerTextContainer}>
-              <TextDefault style={[styles.text, styles.headerText]}>
-                Total Amount *
-              </TextDefault>
-            </View>
-          </View>
-          <View style={styles.valueRow}>
-            <View style={styles.valueTextContainer}>
-              <TextDefault style={[styles.text, styles.headerText]}>
-                {isDreamGoldPlan
-                  ? `${accountDetails?.schemeSummary?.schemaSummaryTransBalance?.insPaid || 0} / ${accountDetails?.schemeSummary?.instalment || 0}`
-                  : `${productData.amountWeight?.Weight || 0} grams`}
-              </TextDefault>
-            </View>
-            <View style={styles.valueTextContainer}>
-              <TextDefault style={[styles.text, styles.headerText]}>
-                {productData.amountWeight?.Amount || 0} ₹
-              </TextDefault>
-            </View>
-          </View>
-        </View>
-
-        {/* Yellow Line Below Center Section */}
-        <View style={styles.yellowLine} />
-
-        {/* Bottom Section */}
-        <View style={styles.bottomSection}>
-          {/* Circle Section */}
-          <View style={styles.circleContainer}>
-            <View style={styles.weightCircle}>
-              <TextDefault style={styles.weightText}>
-                {isDreamGoldPlan ? 'Amount Saved' : 'Weight Saved'}
-              </TextDefault>
-              <TextDefault style={styles.weightValue}>
-                {isDreamGoldPlan
-                  ? `₹${accountDetails?.schemeSummary?.schemaSummaryTransBalance?.amtrecd || 0}`
-                  : `${productData.amountWeight?.Weight || 0} grams`}
-              </TextDefault>
-            </View>
-          </View>
-
-          {/* Maturity Date Section */}
-          <View style={styles.dateContainer}>
-            <TextDefault style={styles.maturityText}>
-              Date of Maturity
+        {/* Stats Grid */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statBox}>
+            <MaterialIcons 
+              name={isDreamGoldPlan ? "event-note" : "scale"} 
+              size={20} 
+              color="rgba(255,255,255,0.9)" 
+            />
+            <TextDefault style={styles.statLabel}>
+              {isDreamGoldPlan ? 'Installments' : 'Weight Saved'}
             </TextDefault>
-            <TextDefault style={styles.dateText}>
+            <TextDefault style={styles.statValue}>
+              {isDreamGoldPlan
+                ? `${accountDetails?.schemeSummary?.schemaSummaryTransBalance?.insPaid || 0}/${accountDetails?.schemeSummary?.instalment || 0}`
+                : `${productData.amountWeight?.Weight || 0}g`}
+            </TextDefault>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statBox}>
+            <MaterialIcons name="payments" size={20} color="rgba(255,255,255,0.9)" />
+            <TextDefault style={styles.statLabel}>Total Amount</TextDefault>
+            <TextDefault style={styles.statValue}>
+              ₹{parseFloat(productData.amountWeight?.Amount || 0).toLocaleString('en-IN')}
+            </TextDefault>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statBox}>
+            <MaterialIcons name="event" size={20} color="rgba(255,255,255,0.9)" />
+            <TextDefault style={styles.statLabel}>Maturity</TextDefault>
+            <TextDefault style={styles.statValue} numberOfLines={1}>
               {formatDate(productData.maturityDate)}
             </TextDefault>
           </View>
+        </View>
 
-          {/* Pay Button Section */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.payButton}
-              onPress={() =>
-                navigation.navigate('ProductDescription', {
-                  productData,
-                  status,
-                  accountDetails
-                })
-              }
-            >
-              <TextDefault style={styles.payButtonText}>View</TextDefault>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.payButton}
-              onPress={() =>
-                navigation.navigate('Buy', {
-                  productData,
-                  status,
-                  accountDetails,
-                  isDreamGoldPlan
-                })
-              }
-            >
-              <TextDefault style={styles.payButtonText}>Pay</TextDefault>
-            </TouchableOpacity>
-          </View>
+        {/* Action Buttons */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() =>
+              navigation.navigate('ProductDescription', {
+                productData,
+                status,
+                accountDetails,
+              })
+            }
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="visibility" size={16} color={COLORS.primary} />
+            <TextDefault style={styles.actionButtonText}>View Details</TextDefault>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, styles.payButton]}
+            onPress={() =>
+              navigation.navigate('Buy', {
+                productData,
+                status,
+                accountDetails,
+                isDreamGoldPlan,
+              })
+            }
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="payment" size={16} color={COLORS.white} />
+            <TextDefault style={styles.payButtonText}>Pay Now</TextDefault>
+          </TouchableOpacity>
         </View>
       </LinearGradient>
     </TouchableOpacity>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   cardContainer: {
-    margin: scale(5),
-    borderRadius: scale(15),
+    margin: moderateScale(8),
+    borderRadius: SIZES.radius_lg,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
     elevation: 6,
-    shadowColor: colors.white,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84
   },
   gradientBackground: {
-    borderRadius: scale(15),
-    padding: scale(5)
+    borderRadius: SIZES.radius_lg,
+    padding: moderateScale(16),
   },
-  topSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: scale(20),
-    ...alignment.Psmall
-  },
-  rightTop: {
-    alignItems: 'flex-end'
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignSelf: 'flex-end',
+  loadingContainer: {
+    padding: moderateScale(40),
     alignItems: 'center',
-    marginTop: scale(-30),
-    marginRight: scale(10)
   },
-  statusDot: {
-    width: scale(8),
-    height: scale(8),
-    borderRadius: scale(4),
-    marginLeft: scale(5)
+  errorContainer: {
+    padding: moderateScale(30),
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    margin: moderateScale(8),
+    borderRadius: SIZES.radius_lg,
   },
-  centerSection: {
-    paddingVertical: scale(15),
-    borderRadius: scale(5),
-    marginBottom: scale(5),
-    ...alignment.PxSmall
+  errorText: {
+    color: COLORS.danger,
+    marginTop: moderateScale(10),
+    fontSize: moderateScale(13),
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  valueRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: scale(5)
-  },
-  headerTextContainer: {
-    flex: 1,
-    alignItems: 'center'
-  },
-  valueTextContainer: {
-    flex: 1,
-    alignItems: 'center'
-  },
-  bottomSection: {
+  headerSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    ...alignment.PxSmall
+    marginBottom: moderateScale(16),
   },
-  circleContainer: {
-    alignItems: 'center'
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: moderateScale(12),
   },
-  weightCircle: {
-    width: scale(75),
-    height: scale(75),
-    borderRadius: scale(70),
-    backgroundColor: colors.radioColor,
+  iconBadge: {
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(12),
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: scale(10),
-    borderWidth: 5,
-    borderColor: '#eab308'
   },
-  dateContainer: {
+  headerInfo: {
     flex: 1,
-    justifyContent: 'center',
-    marginLeft: scale(10),
-    alignItems: 'center'
   },
-  maturityText: {
-    color: colors.greenColor,
-    fontSize: scale(12),
+  schemeCode: {
+    color: COLORS.white,
+    fontSize: moderateScale(14),
+    // fontWeight: '600',
+    opacity: 0.9,
+    marginBottom: moderateScale(2),
+    ...FONTS.subheading
+  },
+  schemeName: {
+    color: COLORS.white,
+    fontSize: moderateScale(14),
+    // fontWeight: '700',
+    ...FONTS.body1
+  },
+  statusBadge: {
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: moderateScale(4),
+    borderRadius: moderateScale(12),
+  },
+  statusText: {
+    color: COLORS.white,
+    fontSize: moderateScale(10),
+    fontWeight: '700',
+  ...FONTS.body1
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: SIZES.radius,
+    padding: moderateScale(12),
+    marginBottom: moderateScale(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    gap: moderateScale(4),
+  },
+  statLabel: {
+    color: 'rgb(255, 255, 255)',
+    fontSize: moderateScale(11),
+    fontWeight: '500',
     textAlign: 'center',
-    fontWeight: 'bold'
+    ...FONTS.body1
   },
-  dateText: {
-    color: colors.greenColor,
-    fontSize: scale(10),
-    marginTop: scale(2),
+  statValue: {
+    color: COLORS.white,
+    fontSize: moderateScale(12),
+    fontWeight: '700',
     textAlign: 'center',
-    fontWeight: 'bold'
+    ...FONTS.body1
   },
-  buttonContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    marginLeft: scale(10),
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginHorizontal: moderateScale(8),
+  },
+  actionContainer: {
     flexDirection: 'row',
-    gap: 10
+    gap: moderateScale(10),
+    marginBottom: moderateScale(8),
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: moderateScale(10),
+    paddingHorizontal: moderateScale(12),
+    borderRadius: moderateScale(10),
+    gap: moderateScale(6),
   },
   payButton: {
-    backgroundColor: colors.white,
-    paddingVertical: scale(5),
-    paddingHorizontal: scale(10),
-    borderRadius: scale(5),
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginBottom: scale(10)
+    backgroundColor: COLORS.success,
   },
-  text: {
-    color: colors.greenColor,
-    fontSize: scale(12),
-    fontWeight: 'bold'
-  },
-  bold: {
-    fontWeight: 'bold'
-  },
-  weightText: {
-    color: colors.fontMainColor,
-    fontSize: scale(7),
-    textAlign: 'center',
-    fontWeight: 'bold'
-  },
-  weightValue: {
-    color: colors.fontMainColor,
-    fontSize: scale(8),
-    fontWeight: 'bold',
-    textAlign: 'center'
+  actionButtonText: {
+    color: COLORS.primary,
+    fontSize: moderateScale(12),
+    fontWeight: '700',
+    ...FONTS.body1
   },
   payButtonText: {
-    color: colors.fontMainColor,
-    fontSize: 12,
-    fontWeight: 'bold'
+    color: COLORS.white,
+    fontSize: moderateScale(12),
+    fontWeight: '700',
+     ...FONTS.body1
   },
-  yellowLine: {
-    height: scale(2),
-    backgroundColor: colors.greenColor,
-    borderRadius: scale(1),
-    marginBottom: scale(10)
-  },
-  accountDetailsSection: {
-    padding: scale(10),
-    backgroundColor: colors.lightGray,
-    borderRadius: scale(5),
-    marginBottom: scale(10)
-  },
-  detailRow: {
+  infoBanner: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: scale(5)
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    paddingVertical: moderateScale(8),
+    paddingHorizontal: moderateScale(12),
+    borderRadius: moderateScale(8),
+    gap: moderateScale(6),
   },
-  detailLabel: {
-    color: colors.fontMainColor,
-    fontSize: scale(12)
+  infoBannerText: {
+    color: COLORS.white,
+    fontSize: moderateScale(11),
+    fontWeight: '600',
   },
-  detailValue: {
-    color: colors.fontSecondColor,
-    fontSize: scale(12),
-    fontWeight: '600'
-  }
-})
+});
 
-export default ProductCard
+export default ProductCard;

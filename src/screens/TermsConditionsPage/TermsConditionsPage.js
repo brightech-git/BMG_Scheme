@@ -1,57 +1,10 @@
 import React from 'react';
 import { ScrollView, View, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
 import { TextDefault } from '../../components';
-import { scale } from '../../utils';
+import appTheme from '../../utils/Theme';
+import CommonHeader from '../../components/CommonHeader/CommonHeader';
 
-// Your color palette
-const colors1 = {
-  // Base tones
-  primary: '#CD865C',          // Main brand/base color
-  primaryDark: '#B35F34',      // Darker shade for hover/pressed
-  primaryLight: '#E8B79D',     // Lighter shade for highlights
-
-  // Text colors
-  textPrimary: '#000000ff',    // Main text
-  primaryText: '#041f60',      // Primary text color
-  textSecondary: '#555555',    // Secondary/subtitle text
-  textLight: '#FFFFFF',        // Light text on dark backgrounds
-
-  // Backgrounds
-  background: '#FFF9F6',       // Page background (light warm)
-  cardBackground: '#FFFFFF',   // Card or container
-  sectionBackground: '#FBEFE9',// Section or block backgrounds
-  headerBackground: '#f58747b6', // Headers/Top bars
-
-  // Buttons
-  buttonPrimary: '#CD865C',    
-  buttonPrimaryHover: '#B35F34',
-  buttonSecondary: '#FFFFFF',
-  buttonText: '#FFFFFF',
-
-  // Borders and lines
-  borderLight: '#E6D3CA',
-  borderDark: '#B35F34',
-
-  // Alerts & Status
-  success: '#4CAF50',
-  error: '#F44336',
-  warning: '#FF9800',
-  info: '#2196F3',
-
-  // Icons
-  iconPrimary: '#CD865C',
-  iconSecondary: '#555555',
-
-  // Gradients
-  gradientPrimary: ['#CD865C', '#B35F34'], // React Native
-  gradientSecondary: ['#E8B79D', '#CD865C'],
-  gradientText: ['#31063a', '#ff2b59'],
-  gradientBackground: "linear-gradient(135deg, #CD865C, #B35F34)", // Web CSS
-
-  // Additional accents
-  accent: '#FFB699',
-  highlight: '#FFD1B3'
-};
+const { COLORS, SIZES, FONTS } = appTheme;
 
 const TermsConditionsPage = () => {
   const termsData = [
@@ -130,11 +83,11 @@ const TermsConditionsPage = () => {
 
   return (
     <View style={styles.container}>
-      {/* <ImageBackground 
-        source={require('../../assets/Terms-and-Conditionspage.jpg')}
+      <ImageBackground 
+        source={require('../../assets/bg4.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
-      > */}
+      >
         <View style={styles.overlay} />
         
         <ScrollView 
@@ -142,10 +95,7 @@ const TermsConditionsPage = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <TextDefault style={styles.title}>Terms & Conditions</TextDefault>
-            <View style={styles.titleUnderline} />
-          </View>
+          <CommonHeader title="Terms & Conditions" />
           
           <View style={styles.contentContainer}>
             {termsData.map((section, index) => (
@@ -182,7 +132,7 @@ const TermsConditionsPage = () => {
             </View>
           </View>
         </ScrollView>
-      {/* </ImageBackground> */}
+      </ImageBackground>
     </View>
   );
 };
@@ -190,106 +140,87 @@ const TermsConditionsPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // backgroundColor: COLORS.background,
   },
   backgroundImage: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 249, 246, 0.92)',
-  },
+  // overlay: {
+  //   ...StyleSheet.absoluteFillObject,
+  //   backgroundColor: 'rgba(255, 249, 246, 0.92)',
+  // },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: scale(20),
-    paddingBottom: scale(40),
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: scale(30),
-  },
-  title: {
-    fontSize: scale(28),
-    fontWeight: 'bold',
-    color: colors1.primaryText,
-    textAlign: 'center',
-    marginBottom: scale(10),
-  },
-  titleUnderline: {
-    width: scale(80),
-    height: scale(4),
-    backgroundColor: colors1.primary,
-    borderRadius: scale(2),
+    padding: SIZES.padding,
+    paddingBottom: SIZES.padding * 2.5,
   },
   contentContainer: {
-    backgroundColor: colors1.cardBackground,
-    borderRadius: scale(16),
-    padding: scale(20),
-    shadowColor: colors1.primaryDark,
+    backgroundColor: COLORS.card1,
+    borderRadius: SIZES.radius_lg,
+    padding: SIZES.padding,
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
   },
   section: {
-    marginBottom: scale(25),
-    borderLeftWidth: scale(3),
-    borderLeftColor: colors1.primaryLight,
-    paddingLeft: scale(15),
+    marginBottom: SIZES.margin * 1.5,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primaryLight,
+    paddingLeft: SIZES.margin,
   },
   sectionTitle: {
-    fontSize: scale(18),
-    fontWeight: 'bold',
-    color: colors1.primary,
-    marginBottom: scale(8),
+    ...FONTS.h5,
+    color: COLORS.primary,
+    marginBottom: SIZES.margin / 2,
   },
   subtitle: {
-    fontSize: scale(16),
-    fontWeight: '600',
-    color: colors1.primaryDark,
-    marginBottom: scale(8),
+    ...FONTS.font,
+    color: COLORS.secondary,
+    marginBottom: SIZES.margin / 2,
   },
   subsection: {
-    marginLeft: scale(15),
-    marginTop: scale(10),
+    marginLeft: SIZES.margin,
+    marginTop: SIZES.margin / 2,
   },
   subsectionTitle: {
-    fontSize: scale(15),
-    fontWeight: '600',
-    color: colors1.textSecondary,
-    marginBottom: scale(5),
+    ...FONTS.font,
+    color: COLORS.text,
+    marginBottom: SIZES.margin / 4,
   },
   pointContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: scale(6),
+    marginBottom: SIZES.margin / 3,
   },
   bullet: {
-    width: scale(6),
-    height: scale(6),
-    borderRadius: scale(3),
-    backgroundColor: colors1.primary,
-    marginRight: scale(10),
-    marginTop: scale(8),
+    width: SIZES.fontSm,
+    height: SIZES.fontSm,
+    borderRadius: SIZES.radius_sm,
+    backgroundColor: COLORS.primary,
+    marginRight: SIZES.margin,
+    marginTop: SIZES.fontSm,
   },
   pointText: {
     flex: 1,
-    fontSize: scale(14),
-    color: colors1.textSecondary,
-    lineHeight: scale(20),
+    ...FONTS.font,
+    color: COLORS.text,
+    lineHeight: SIZES.font * 1.4,
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: colors1.borderLight,
-    paddingTop: scale(20),
+    borderTopColor: COLORS.borderColor,
+    paddingTop: SIZES.padding,
     alignItems: 'center',
   },
   lastUpdated: {
-    fontSize: scale(12),
-    color: colors1.textSecondary,
+    ...FONTS.fontSm,
+    color: COLORS.textLight,
     fontStyle: 'italic',
   },
 });

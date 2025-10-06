@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,26 +13,28 @@ import {
   ToastAndroid,
   Dimensions,
   Animated,
-  Easing
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TextDefault } from '../../components';
-import { alignment, colors } from '../../utils';
-import { colors1 } from '../../utils/colors';
+  Easing,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TextDefault } from "../../components";
+import { alignment, colors } from "../../utils";
+import { colors1 } from "../../utils/colors";
+import { COLORS, FONTS } from "../../utils/Theme";
+import { LinearGradient } from "expo-linear-gradient";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 // Toast function for iOS
 const showToast = (message) => {
-  if (Platform.OS === 'android') {
+  if (Platform.OS === "android") {
     ToastAndroid.show(message, ToastAndroid.SHORT);
   } else {
-    Alert.alert('', message);
+    Alert.alert("", message);
   }
 };
 
 function MpinScreen({ route, navigation }) {
-  const [mpin, setMpin] = useState(['', '', '', '']);
+  const [mpin, setMpin] = useState(["", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -55,24 +57,24 @@ function MpinScreen({ route, navigation }) {
         duration: 500,
         easing: Easing.out(Easing.poly(4)),
         useNativeDriver: true,
-      })
+      }),
     ]).start();
   };
 
   const checkIfMpinCreated = async () => {
     try {
-      const isMpinCreated = await AsyncStorage.getItem('isMpinCreated');
-      if (isMpinCreated === 'true') {
-        navigation.replace('VerifyMpinScreen');
+      const isMpinCreated = await AsyncStorage.getItem("isMpinCreated");
+      if (isMpinCreated === "true") {
+        navigation.replace("VerifyMpinScreen");
       }
     } catch (error) {
-      console.error('Error checking MPIN creation:', error);
+      console.error("Error checking MPIN creation:", error);
     }
   };
 
   const handleMpinChange = (value, index) => {
     if (value && !/^\d$/.test(value)) return;
-    
+
     const newMpin = [...mpin];
     newMpin[index] = value;
     setMpin(newMpin);
@@ -85,29 +87,29 @@ function MpinScreen({ route, navigation }) {
   };
 
   const handleKeyPress = (event, index) => {
-    if (event.nativeEvent.key === 'Backspace' && !mpin[index] && index > 0) {
+    if (event.nativeEvent.key === "Backspace" && !mpin[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
   const handleCreateMpin = async () => {
-    const enteredMpin = mpin.join('');
+    const enteredMpin = mpin.join("");
 
     if (enteredMpin.length !== 4) {
-      showToast('Please enter a valid 4-digit MPIN.');
+      showToast("Please enter a valid 4-digit MPIN.");
       return;
     }
 
     setIsLoading(true);
     try {
-      await AsyncStorage.setItem('mpin', enteredMpin);
-      await AsyncStorage.setItem('isMpinCreated', 'true');
-      showToast('MPIN created successfully!');
+      await AsyncStorage.setItem("mpin", enteredMpin);
+      await AsyncStorage.setItem("isMpinCreated", "true");
+      showToast("MPIN created successfully!");
       setTimeout(() => {
-        navigation.replace('Drawer');
+        navigation.replace("Drawer");
       }, 1000);
     } catch (error) {
-      showToast('Failed to save MPIN. Please try again.');
+      showToast("Failed to save MPIN. Please try again.");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -116,49 +118,56 @@ function MpinScreen({ route, navigation }) {
 
   const handleForgotMpin = async () => {
     Alert.alert(
-      'Reset MPIN',
-      'Are you sure you want to reset your MPIN? You will need to verify OTP again.',
+      "Reset MPIN",
+      "Are you sure you want to reset your MPIN?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Reset',
-          style: 'destructive',
+          text: "Reset",
+          style: "destructive",
           onPress: async () => {
             try {
-              await AsyncStorage.removeItem('mpin');
-              await AsyncStorage.removeItem('isMpinCreated');
-              await AsyncStorage.removeItem('isOtpVerified');
-              navigation.replace('OTP');
+              await AsyncStorage.removeItem("mpin");
+              await AsyncStorage.removeItem("isMpinCreated");
+              await AsyncStorage.removeItem("isOtpVerified");
+              navigation.replace("LoginPage");
             } catch (error) {
-              showToast('Failed to reset MPIN. Please try again.');
+              showToast("Failed to reset MPIN. Please try again.");
               console.error(error);
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   return (
     <ImageBackground
-      source={require('../../assets/bg2.jpg')}
+      source={require("../../assets/bg4.jpg")}
       style={styles.backgroundImage}
     >
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View
+          style={[
+            styles.container,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoCard}>
               <View style={styles.logoRow}>
                 <Image
-                  source={require('../../assets/logo2.png')}
+                  source={require("../../assets/logo2.png")}
                   style={styles.logoImage}
                 />
-                <TextDefault style={styles.logoText}>BMG Jewellers Pvt Ltd</TextDefault>
+                <TextDefault style={styles.logoText}>
+                  BMG Jewellers Pvt Ltd
+                </TextDefault>
               </View>
               <TextDefault style={styles.subtitleText}>
                 (GOLD | SILVER | DIAMOND)
@@ -176,8 +185,10 @@ function MpinScreen({ route, navigation }) {
             </View>
 
             <View style={styles.mpinSection}>
-              <TextDefault style={styles.mpinLabel}>Enter 4-Digit MPIN</TextDefault>
-              
+              <TextDefault style={styles.mpinLabel}>
+                Enter 4-Digit MPIN
+              </TextDefault>
+
               <View style={styles.mpinContainer}>
                 {mpin.map((digit, index) => (
                   <View key={index} style={styles.mpinInputWrapper}>
@@ -203,7 +214,7 @@ function MpinScreen({ route, navigation }) {
             </View>
 
             <View style={styles.actionSection}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={handleForgotMpin}
                 style={styles.forgotButton}
               >
@@ -212,22 +223,43 @@ function MpinScreen({ route, navigation }) {
                 </TextDefault>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[
-                  styles.createButton,
-                  mpin.join('').length === 4 ? styles.createButtonActive : {},
-                  isLoading ? styles.createButtonLoading : {}
-                ]} 
-                onPress={handleCreateMpin}
-                disabled={mpin.join('').length !== 4 || isLoading}
-              >
-                <TextDefault style={[
-                  styles.createButtonText,
-                  mpin.join('').length === 4 ? styles.createButtonTextActive : {}
-                ]}>
-                  {isLoading ? 'Creating...' : 'Create MPIN'}
-                </TextDefault>
-              </TouchableOpacity>
+              {mpin.join("").length === 4 && !isLoading ? (
+                // Gradient button when active
+                <TouchableOpacity
+                  onPress={handleCreateMpin}
+                  disabled={isLoading}
+                >
+                  <LinearGradient
+                    colors={COLORS.gradientPrimary5}
+                    start={{ x: 1, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.createButton, styles.gradientButton]}
+                  >
+                    <TextDefault
+                      style={[
+                        styles.createButtonText,
+                        styles.createButtonTextActive,
+                      ]}
+                    >
+                      {isLoading ? "Creating..." : "Create MPIN"}
+                    </TextDefault>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ) : (
+                // Normal button when inactive
+                <TouchableOpacity
+                  style={[
+                    styles.createButton,
+                    isLoading ? styles.createButtonLoading : {},
+                  ]}
+                  onPress={handleCreateMpin}
+                  disabled={true}
+                >
+                  <TextDefault style={styles.createButtonText}>
+                    {isLoading ? "Creating..." : "Create MPIN"}
+                  </TextDefault>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </Animated.View>
@@ -237,7 +269,7 @@ function MpinScreen({ route, navigation }) {
 }
 
 function VerifyMpinScreen({ navigation }) {
-  const [mpin, setMpin] = useState(['', '', '', '']);
+  const [mpin, setMpin] = useState(["", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const inputRefs = useRef([]);
@@ -260,13 +292,13 @@ function VerifyMpinScreen({ navigation }) {
         duration: 500,
         easing: Easing.out(Easing.poly(4)),
         useNativeDriver: true,
-      })
+      }),
     ]).start();
   };
 
   const handleMpinChange = (value, index) => {
     if (value && !/^\d$/.test(value)) return;
-    
+
     const newMpin = [...mpin];
     newMpin[index] = value;
     setMpin(newMpin);
@@ -279,39 +311,39 @@ function VerifyMpinScreen({ navigation }) {
   };
 
   const handleKeyPress = (event, index) => {
-    if (event.nativeEvent.key === 'Backspace' && !mpin[index] && index > 0) {
+    if (event.nativeEvent.key === "Backspace" && !mpin[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
   const handleVerifyMpin = async () => {
-    const enteredMpin = mpin.join('');
+    const enteredMpin = mpin.join("");
 
     if (enteredMpin.length !== 4) {
-      showToast('Please enter a valid 4-digit MPIN.');
+      showToast("Please enter a valid 4-digit MPIN.");
       return;
     }
 
     setIsLoading(true);
     try {
-      const savedMpin = await AsyncStorage.getItem('mpin');
+      const savedMpin = await AsyncStorage.getItem("mpin");
       if (enteredMpin === savedMpin) {
-        showToast('MPIN verified successfully!');
+        showToast("MPIN verified successfully!");
         setTimeout(() => {
-          navigation.replace('Drawer');
+          navigation.replace("Drawer");
         }, 1000);
       } else {
-        setAttempts(prev => prev + 1);
-        setMpin(['', '', '', '']);
+        setAttempts((prev) => prev + 1);
+        setMpin(["", "", "", ""]);
         inputRefs.current[0]?.focus();
-        
+
         if (attempts >= 2) {
           Alert.alert(
-            'Too Many Attempts',
-            'You have exceeded the maximum number of attempts. Please reset your MPIN.',
+            "Too Many Attempts",
+            "You have exceeded the maximum number of attempts. Please reset your MPIN.",
             [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Reset MPIN', onPress: () => navigation.navigate('OTP') }
+              { text: "Cancel", style: "cancel" },
+              { text: "Reset MPIN", onPress: () => navigation.navigate("LoginPage") },
             ]
           );
         } else {
@@ -319,7 +351,7 @@ function VerifyMpinScreen({ navigation }) {
         }
       }
     } catch (error) {
-      showToast('Failed to verify MPIN. Please try again.');
+      showToast("Failed to verify MPIN. Please try again.");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -328,24 +360,31 @@ function VerifyMpinScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/bg2.jpg')}
+      source={require("../../assets/bg4.jpg")}
       style={styles.backgroundImage}
-    >  
-       <KeyboardAvoidingView
+    >
+      <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View
+          style={[
+            styles.container,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoCard}>
               <View style={styles.logoRow}>
                 <Image
-                  source={require('../../assets/logo2.png')}
+                  source={require("../../assets/logo2.png")}
                   style={styles.logoImage}
                 />
-                <TextDefault style={styles.logoText}>BMG Jewellers Pvt Ltd</TextDefault>
+                <TextDefault style={styles.logoText}>
+                  BMG Jewellers Pvt Ltd
+                </TextDefault>
               </View>
               <TextDefault style={styles.subtitleText}>
                 (GOLD | SILVER | DIAMOND)
@@ -364,7 +403,7 @@ function VerifyMpinScreen({ navigation }) {
 
             <View style={styles.mpinSection}>
               <TextDefault style={styles.mpinLabel}>MPIN</TextDefault>
-              
+
               <View style={styles.mpinContainer}>
                 {mpin.map((digit, index) => (
                   <View key={index} style={styles.mpinInputWrapper}>
@@ -396,8 +435,8 @@ function VerifyMpinScreen({ navigation }) {
             </View>
 
             <View style={styles.actionSection}>
-              <TouchableOpacity 
-                onPress={() => navigation.navigate('LoginPage')}
+              <TouchableOpacity
+                onPress={() => navigation.navigate("LoginPage")}
                 style={styles.forgotButton}
               >
                 <TextDefault style={styles.forgotText}>
@@ -405,36 +444,55 @@ function VerifyMpinScreen({ navigation }) {
                 </TextDefault>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[
-                  styles.createButton,
-                  mpin.join('').length === 4 ? styles.createButtonActive : {},
-                  isLoading ? styles.createButtonLoading : {}
-                ]} 
-                onPress={handleVerifyMpin}
-                disabled={mpin.join('').length !== 4 || isLoading}
-              >
-                <TextDefault style={[
-                  styles.createButtonText,
-                  mpin.join('').length === 4 ? styles.createButtonTextActive : {}
-                ]}>
-                  {isLoading ? 'Verifying...' : 'Verify MPIN'}
-                </TextDefault>
-              </TouchableOpacity>
+              {mpin.join("").length === 4 && !isLoading ? (
+                // Gradient button when active
+                <TouchableOpacity
+                  onPress={handleVerifyMpin}
+                  disabled={isLoading}
+                >
+                  <LinearGradient
+                    colors={COLORS.gradientPrimary5}
+                    start={{ x: 1, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.createButton, styles.gradientButton]}
+                  >
+                    <TextDefault
+                      style={[
+                        styles.createButtonText,
+                        styles.createButtonTextActive,
+                      ]}
+                    >
+                      {isLoading ? "Verifying..." : "Verify MPIN"}
+                    </TextDefault>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ) : (
+                // Inactive button
+                <TouchableOpacity
+                  style={[
+                    styles.createButton,
+                    isLoading ? styles.createButtonLoading : {},
+                  ]}
+                  onPress={handleVerifyMpin}
+                  disabled={true}
+                >
+                  <TextDefault style={styles.createButtonText}>
+                    {isLoading ? "Verifying..." : "Verify MPIN"}
+                  </TextDefault>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
-      </ImageBackground>
- 
-   
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   keyboardContainer: {
     flex: 1,
@@ -442,24 +500,24 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-   
-    alignItems: 'center',
+
+    alignItems: "center",
     marginTop: 60,
   },
-  
+
   // Logo Section
   logoContainer: {
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    alignItems: "center",
+    paddingTop: Platform.OS === "ios" ? 40 : 20,
     paddingBottom: 20,
   },
   logoCard: {
-    backgroundColor: colors1.cardBackground,
+    backgroundColor: COLORS.label1,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -468,8 +526,8 @@ const styles = StyleSheet.create({
     borderColor: colors1.borderLight,
   },
   logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 6,
   },
   logoImage: {
@@ -480,13 +538,13 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors1.primaryText,
     letterSpacing: 0.8,
   },
   subtitleText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors1.textSecondary,
     letterSpacing: 1.5,
     opacity: 0.8,
@@ -496,49 +554,51 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 30,
     marginTop: 30,
   },
   title: {
     fontSize: 26,
-    fontWeight: 'bold',
-    color: colors1.textPrimary,
+    // fontWeight: "bold",
+    color: COLORS.black,
     marginBottom: 6,
-    textAlign: 'center',
+    textAlign: "center",
+    ...FONTS.heading
   },
   description: {
     fontSize: 14,
-    color: colors1.textSecondary,
-    textAlign: 'center',
+    color: COLORS.black,
+    textAlign: "center",
     opacity: 0.8,
+    ...FONTS.font
   },
 
   // MPIN Section
   mpinSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   mpinLabel: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors1.textPrimary,
     marginBottom: 16,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginLeft: 6,
   },
   mpinContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
   mpinInputWrapper: {
     marginHorizontal: 6,
-    position: 'relative',
+    position: "relative",
   },
   mpinInput: {
     width: 55,
@@ -547,61 +607,61 @@ const styles = StyleSheet.create({
     borderColor: colors1.borderLight,
     borderRadius: 14,
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     backgroundColor: colors1.cardBackground,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-    textAlign: 'center',
+    textAlign: "center",
     color: colors1.textPrimary,
   },
   mpinInputFilled: {
-    borderColor: colors1.primary,
+    borderColor: COLORS.gradientcolor8,
     backgroundColor: colors1.cardBackground,
-    shadowColor: colors1.primary,
+    shadowColor: COLORS.primary,
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 4,
   },
   filledIndicator: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -6,
-    left: '50%',
+    left: "50%",
     marginLeft: -3,
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors1.primary,
+    backgroundColor: COLORS.gradientcolor8,
   },
   attemptsText: {
     fontSize: 13,
     color: colors1.error,
-    fontWeight: '500',
+    fontWeight: "500",
     marginTop: 6,
   },
 
   // Action Section
   actionSection: {
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    alignItems: 'center',
+    paddingBottom: Platform.OS === "ios" ? 20 : 10,
+    alignItems: "center",
   },
   forgotButton: {
     paddingVertical: 10,
     marginBottom: 10,
   },
   forgotText: {
-    color: colors1.primary,
+    color: COLORS.danger,
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   createButton: {
     backgroundColor: colors1.borderLight,
     paddingVertical: 16,
     borderRadius: 14,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -609,7 +669,7 @@ const styles = StyleSheet.create({
     width: 300,
   },
   createButtonActive: {
-    backgroundColor: colors1.primary,
+    backgroundColor: COLORS.gradientPrimary2,
     shadowColor: colors1.primaryDark,
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -621,7 +681,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: colors1.textSecondary,
     fontSize: 17,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   createButtonTextActive: {
     color: colors1.textLight,

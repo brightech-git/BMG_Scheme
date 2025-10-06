@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductCardSkeleton from '../../components/SkeletonLoader/ProductCardSkeleton';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CommonHeader from '../../components/CommonHeader/CommonHeader';
 
 function DiscoverPlace({ navigation }) {
   const [phoneSearchData, setPhoneSearchData] = useState([]);
@@ -141,23 +142,12 @@ function DiscoverPlace({ navigation }) {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require('../../assets/bg2.jpg')}
+        source={require('../../assets/bg4.jpg')}
         style={styles.mainBackground}
         imageStyle={styles.backgroundImageStyle}
       >
         <SafeAreaView style={styles.safeArea}>
-          {/* Back Button */}
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={colors.textBlueColor} />
-          </TouchableOpacity>
-
-          {/* Title */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.titleText}>Your Schemes</Text>
-          </View>
+          <CommonHeader title="Your Schemes" />
 
           <ScrollView
             contentContainerStyle={styles.scrollViewContentContainer}

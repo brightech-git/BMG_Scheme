@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, Text, ImageBackground, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { scale } from '../../utils';
+import { scale, moderateScale, COLORS, FONTS, SIZES, DIGIGOLD_COLORS } from '../../utils/Theme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors1 } from '../../utils/colors';
+import CommonHeader from '../../components/CommonHeader/CommonHeader';
 
 function KnowMore() {
   const route = useRoute();
@@ -13,19 +13,20 @@ function KnowMore() {
   const DottedCircle = ({ iconName }) => (
     <View style={styles.dottedCircleContainer}>
       <View style={styles.dottedCircle}>
-        <Icon name={iconName} size={scale(30)} color={colors1.primary} />
+        <Icon name={iconName} size={moderateScale(30)} color={DIGIGOLD_COLORS.primary} />
       </View>
     </View>
   );
 
   return (
     <ImageBackground
-      source={require("../../assets/bg2.jpg")}
+      source={require("../../assets/bg4.jpg")}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
+      <CommonHeader title={'KnowMore'}></CommonHeader>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>DIGIGOLD SCHEME</Text>
+        {/* <Text style={styles.title}>DIGIGOLD SCHEME</Text> */}
 
         <Text style={styles.description}>
           Choose DigiGold because it offers a convenient and flexible way to save in gold through a mobile app, providing tiered benefits that allow users to earn additional gold weight on their savings. DigiGold is an ideal choice for customers seeking a secure and accessible investment in gold, with the option to redeem their savings for attractive gold jewellery at BMG Jewellers.
@@ -118,97 +119,93 @@ function KnowMore() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: scale(15),
-    backgroundColor: 'rgba(255, 249, 246, 0.9)',
+    padding: moderateScale(16),
+    backgroundColor: 'rgba(255, 255, 255, 0.63)',
   },
   backgroundImage: {
     flex: 1,
   },
-  title: {
-    fontSize: scale(16),
-    fontWeight: 'bold',
-    color: colors1.primary,
-    marginBottom: scale(10),
-    textAlign: 'center',
-    textDecorationLine: 'underline',
-  },
   description: {
-    fontSize: scale(14),
-    color: colors1.textPrimary,
-    marginBottom: scale(15),
-    lineHeight: scale(20),
+    ...FONTS.body1,
+     fontSize:SIZES.font,
+    color: DIGIGOLD_COLORS.textPrimary,
+    marginBottom: moderateScale(15),
+    lineHeight: moderateScale(20),
+    textAlign: 'justify',
+   
   },
   description1: {
-    fontSize: scale(14),
-    color: colors1.textPrimary,
-    marginBottom: scale(3),
+    ...FONTS.body1,
+     fontSize:SIZES.font,
+    color: DIGIGOLD_COLORS.textPrimary,
+    marginBottom: moderateScale(3),
     flex: 1,
   },
   sectionTitle: {
-    fontSize: scale(16),
-    fontWeight: 'bold',
-    color: colors1.primary,
-    marginVertical: scale(10),
+     ...FONTS.heading,
+     fontSize:SIZES.font,
+    color: DIGIGOLD_COLORS.primary,
+    marginVertical: moderateScale(10),
     textDecorationLine: 'underline',
   },
   subHeading: {
-    fontSize: scale(15),
-    fontWeight: 'bold',
-    color: colors1.primary,
-    marginVertical: scale(5),
+     ...FONTS.subheading,
+     fontSize:SIZES.font,
+    color: DIGIGOLD_COLORS.primary,
+    marginVertical: moderateScale(5),
     textDecorationLine: 'underline',
   },
   stepContainerWithCircle: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scale(15),
+    marginBottom: moderateScale(15),
   },
   dottedCircleContainer: {
-    marginRight: scale(10),
+    marginRight: moderateScale(10),
   },
   dottedCircle: {
-    width: scale(50),
-    height: scale(50),
-    borderRadius: scale(25),
-    borderWidth: scale(1),
-    borderColor: colors1.primary,
+    width: moderateScale(50),
+    height: moderateScale(50),
+    borderRadius: moderateScale(25),
+    borderWidth: moderateScale(1),
+    borderColor: DIGIGOLD_COLORS.primary,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors1.sectionBackground,
+    backgroundColor: DIGIGOLD_COLORS.surface,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: scale(20),
-    gap: 30,
+    marginTop: moderateScale(20),
+    gap: moderateScale(30),
   },
   button: {
-    backgroundColor: colors1.primary,
-    paddingVertical: scale(12),
-    paddingHorizontal: scale(25),
-    borderRadius: scale(8),
+    backgroundColor: DIGIGOLD_COLORS.primary,
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(25),
+    borderRadius: SIZES.radius_sm,
     elevation: 3,
   },
   closeButton: {
-    backgroundColor: colors1.buttonSecondary,
-    paddingVertical: scale(12),
-    paddingHorizontal: scale(25),
-    borderRadius: scale(8),
+    backgroundColor: COLORS.white,
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(25),
+    borderRadius: SIZES.radius_sm,
     borderWidth: 1,
-    borderColor: colors1.primary,
+    borderColor: DIGIGOLD_COLORS.primary,
     elevation: 2,
   },
   buttonText: {
-    fontSize: scale(14),
-    fontWeight: 'bold',
-    color: colors1.buttonText,
+    ...FONTS.body1,
+     fontSize:SIZES.font,
+    color: COLORS.white,
     textAlign: 'center',
   },
   closeButtonText: {
-    fontSize: scale(14),
-    fontWeight: 'bold',
-    color: colors1.primary,
+    ...FONTS.body1,
+     fontSize:SIZES.font,
+    color: DIGIGOLD_COLORS.primary,
     textAlign: 'center',
   },
 });

@@ -1,6 +1,7 @@
 // styles.js
 import { StyleSheet, Platform } from 'react-native';
 import appTheme from '../../utils/Theme';
+import { scale } from '../../utils';
 
 const { COLORS, SIZES, FONTS, moderateScale, verticalScale } = appTheme;
 
@@ -32,9 +33,10 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(-60),
   },
   logoImage: {
-    width: moderateScale(120),
-    height: moderateScale(120),
+    width: moderateScale(100),
+    height: moderateScale(100),
     resizeMode: 'contain',
+    borderRadius: scale(50),
   },
 
   // Card Container - Compact height

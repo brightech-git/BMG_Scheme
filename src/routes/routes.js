@@ -28,6 +28,7 @@ function Drawer() {
       <NavigationStack.Screen name='MainPageWithYouTube' component={Screen.MainPageWithYouTube}/>
       <NavigationStack.Screen name='ProfileSidebar' component={Screen.ProfileSidebar}/>
       <NavigationStack.Screen name='AboutPage' component={Screen.AboutPage}/>
+      <NavigationStack.Screen name='PaymentDetailScreen' component={Screen.PaymentDetailScreen}/>
       {/* Removed RegisterPage and LoginPage from here */}
     </NavigationStack.Navigator>
   );
@@ -38,6 +39,7 @@ function AppContainer() {
 
   useEffect(() => {
     const checkUserState = async () => {
+      // AsyncStorage.clear();
       try {
         const isMpinCreated = await AsyncStorage.getItem('isMpinCreated');
         if (isMpinCreated === 'true') {

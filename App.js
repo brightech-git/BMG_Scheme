@@ -5,7 +5,7 @@ import { colors } from './src/utils/colors';
 import FlashMessage from 'react-native-flash-message';
 import * as Notifications from 'expo-notifications';
 import { registerForPushNotificationsAsync } from './src/utils/Notification';
-import useFonts from './src/utils/Fonts' // import your font loader
+import useFonts from './src/utils/Fonts'; // import your font loader
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {

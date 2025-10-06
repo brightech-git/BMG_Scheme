@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ImageBackground } from 'react-native';
-import BottomTab from '../../components/BottomTab/BottomTab';
-import { colors } from '../../utils';
-import GoldPlan from '../../ui/ProductCard/GoldPlans';
-import { StyleSheet } from 'react-native';
-import GoldPlansSkeleton from '../../components/SkeletonLoader/GoldPlansSkeleton';
-import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ImageBackground,
+} from "react-native";
+import BottomTab from "../../components/BottomTab/BottomTab";
+import { colors } from "../../utils";
+import GoldPlan from "../../ui/ProductCard/GoldPlans";
+import { StyleSheet } from "react-native";
+import GoldPlansSkeleton from "../../components/SkeletonLoader/GoldPlansSkeleton";
+import { MaterialIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import CommonHeader from "../../components/CommonHeader/CommonHeader";
 
 function GoldPlanScreen({ navigation }) {
   const [schemes, setSchemes] = useState([]);
@@ -16,16 +23,18 @@ function GoldPlanScreen({ navigation }) {
     const fetchSchemes = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://akj.brightechsoftware.com/v1/api/member/scheme');
+        const response = await fetch(
+          "https://akj.brightechsoftware.com/v1/api/member/scheme"
+        );
         const data = await response.json();
-        const formattedSchemes = data.map(s => ({
+        const formattedSchemes = data.map((s) => ({
           schemeId: s.SchemeId,
           schemeName: s.schemeName,
           description: s.SchemeSName,
         }));
         setSchemes(formattedSchemes);
       } catch (error) {
-        console.error('Error fetching schemes:', error);
+        console.error("Error fetching schemes:", error);
       } finally {
         setLoading(false);
       }
@@ -62,26 +71,16 @@ function GoldPlanScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require('../../assets/bg2.jpg')}
+        source={require("../../assets/bg4.jpg")}
         style={styles.mainBackground}
         imageStyle={styles.backgroundImageStyle}
       >
         <SafeAreaView style={styles.safeArea}>
-          {/* Back Button */}
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={colors.textBlueColor} />
-          </TouchableOpacity>
-
-          {/* Title */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.titleText}>Your Gold Plans</Text>
-          </View>
+          {/* Reusable Header */}
+          <CommonHeader title="Your Gold Plans" />
 
           {/* Content */}
-          <ScrollView 
+          <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
@@ -103,8 +102,8 @@ const styles = StyleSheet.create({
   },
   mainBackground: {
     flex: 1,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   backgroundImageStyle: {
     opacity: 0.9,
@@ -113,20 +112,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     left: 15,
     zIndex: 1,
     padding: 10,
   },
   titleContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 60,
     marginBottom: 20,
   },
   titleText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.titleText,
   },
   scrollContent: {
@@ -139,7 +138,7 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     color: colors.redColor,
-    textAlign: 'center',
+    textAlign: "center",
     padding: 20,
   },
 });

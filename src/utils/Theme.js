@@ -12,66 +12,89 @@ const moderateScale = (size, factor = 0.5) => size + (scale(size) - size) * fact
 
 export const COLORS = {
   // Base
-  background: "#FFFFFF",
-  card: "#f5f0f0ff",
-  surface: "#F5F5F5",
-  surfaceVariant: "#EEEEEE",
+  background: "rgba(255, 255, 255, 1)",
+  card: "rgba(245, 245, 245, 1)",
+  card1: "rgba(255, 255, 255, 0.65)",
+  surface: "rgba(245, 245, 245, 1)",
+  surfaceVariant: "rgba(238, 238, 238, 1)",
+  transparent: "rgba(255, 255, 255, 0)",
 
-  // Core Brand
-  primary: "#1c467cff",
-  primaryLight: "rgba(212, 175, 55, 0.15)",
-  secondary: "#3A6EA5",
-  notification: "#C98900",
+  // Core Brand (updated)
+  primary: "rgba(74, 144, 226, 1)",         // main blue
+  primaryLight: "rgba(74, 144, 226, 0.15)",
+  secondary: "rgba(225, 100, 250, 1)",      // main magenta/pink
+  notification: "rgba(201, 137, 0, 1)",
 
   // Status
-  success: "#2E7D32",
-  danger: "#C62828",
-  warning: "#FFA000",
-  info: "#1565C0",
+  success: "rgba(46, 125, 50, 1)",
+  danger: "rgba(198, 40, 40, 1)",
+  warning: "rgba(255, 160, 0, 1)",
+  info: "rgba(21, 101, 192, 1)",
 
   // Text
-  title: "#333333",
-  text: "#222222",
-  textLight: "#666666",
-  label: "#757575",
+  title: "rgba(51, 51, 51, 1)",
+  text: "rgba(34, 34, 34, 1)",
+  textLight: "rgba(102, 102, 102, 1)",
+  label: "rgba(117, 117, 117, 1)",
+  label1: "rgba(233, 219, 219, 1)",   // ⚠ alpha >1 fixed to 1
   placeholder: "rgba(0, 0, 0, 0.4)",
-  white: "#FFFFFF",
+  white: "rgba(255, 255, 255, 1)",
+  black: "rgba(0, 0, 0, 1)",
 
   // Borders & Shadows
   borderColor: "rgba(0, 0, 0, 0.1)",
-  outline: "#DDDDDD",
+  outline: "rgba(221, 221, 221, 1)",
   shadow: "rgba(0, 0, 0, 0.08)",
   overlay: "rgba(0, 0, 0, 0.3)",
 
   // Inputs
-  input: "#F0F0F0",
-  darkInput: "#E8E8E8",
+  input: "rgba(240, 240, 240, 1)",
+  darkInput: "rgba(232, 232, 232, 1)",
 
   // Icons
-  iconPrimary: "#C5A572",
-  iconSecondary: "#888888",
+  iconPrimary: "rgba(74, 144, 226, 1)",
+  iconSecondary: "rgba(136, 136, 136, 1)",
 
-  // Gradients
-  gradientPrimary: ["#D4AF37", "#8C6C3F"],
-  gradientSecondary: ["rgba(197,165,114,0.15)", "#D4AF37"],
-  gradientText: ["#2E6F95", "#C62828"],
-  gradientBackground: "linear-gradient(135deg, #F9F9F9, #FFFFFF)",
-  gradientPrimary1: ["#e6e1d4ff", "#e4d9caff"],
-  gradientPrimary2: ["#1c467cff", "#3A6EA5"],
-  gradientPrimary3: ["#ffffffff", "#ffffffff"],
-  gradientPrimary4: ["#DDDDDD", "#DDDDDD"],
-  
+  // Gradients (rgba arrays)
+  gradientPrimary: ["rgba(16, 87, 168, 1)", "rgba(183, 38, 212, 1)"],
+  gradientSecondary: ["rgba(74, 144, 226, 0.15)", "rgba(225, 100, 250, 1)"],
+  gradientText: ["rgba(74, 144, 226, 1)", "rgba(225, 100, 250, 1)"],
+  gradientBackground: "linear-gradient(135deg, rgba(249, 249, 249, 1), rgba(255, 255, 255, 1))",
+  gradientPrimary1: ["rgba(74, 144, 226, 1)", "rgba(225, 100, 250, 1)"],
+  gradientPrimary2: ["rgba(74, 144, 226, 1)", "rgba(225, 100, 250, 1)"],
+  gradientPrimary3: ["rgba(255, 255, 255, 1)", "rgba(255, 255, 255, 1)"],
+  gradientPrimary4: ["rgba(221, 221, 221, 1)", "rgba(221, 221, 221, 1)"],
+  gradientPrimary5: ["rgba(74, 144, 226, 1)", "rgba(225, 100, 250, 1)"],
+
   // Product card
-  gradientcolor1: "#D4AF37",
-  gradientcolor2: "#e47c1bff",
+  gradientcolor1: "rgba(74, 144, 226, 1)",
+  gradientcolor2: "rgba(225, 100, 250, 1)",
 
-  // Gold plan
-  gradientcolor3: "#D4AF37",
-  gradientcolor4: "#2E7D32",
+  // Gold plan (now themed with blue/pink)
+  gradientcolor3: "rgba(74, 144, 226, 1)",
+  gradientcolor4: "rgba(225, 100, 250, 1)",
 
-  gradientcolor5: "#1c467cff",
-  gradientcolor6: "#6b9ed4ff",
+  gradientcolor5: "rgba(74, 144, 226, 1)",
+  gradientcolor6: "rgba(225, 100, 250, 1)",
+
+  gradientcolor7: "rgba(74, 144, 226, 1)",
+  gradientcolor8: "rgba(225, 100, 250, 1)",
 };
+
+export const DIGIGOLD_COLORS = {
+  primary: "rgba(74, 144, 226, 1)",
+  primaryDark: "rgba(59, 120, 194, 1)",  // slightly darker blue
+  accent: "rgba(225, 100, 250, 1)",
+  background: "rgba(255, 255, 255, 1)",
+  surface: "rgba(249, 249, 249, 1)",
+  border: "rgba(230, 230, 230, 1)",
+  textPrimary: "rgba(28, 28, 28, 1)",
+  textSecondary: "rgba(85, 85, 85, 1)",
+  success: "rgba(46, 125, 50, 1)",
+  error: "rgba(198, 40, 40, 1)",
+};
+
+
 
 export const SIZES = {
   // Scalable font sizes
@@ -109,25 +132,25 @@ export const FONTS = {
     fontSize: SIZES.fontLg,
     color: COLORS.text,
     lineHeight: moderateScale(24),
-    fontFamily: "TimesNewRoman",
+    fontFamily: "Domine",
   },
   font: {
     fontSize: SIZES.font,
     color: COLORS.text,
     lineHeight: moderateScale(20),
-    fontFamily: "TimesNewRoman",
+    fontFamily: "Domine",
   },
   fontSm: {
     fontSize: SIZES.fontSm,
     color: COLORS.text,
     lineHeight: moderateScale(18),
-    fontFamily: "TimesNewRoman",
+    fontFamily: "Domine",
   },
   fontXs: {
     fontSize: SIZES.fontXs,
     color: COLORS.text,
     lineHeight: moderateScale(16),
-    fontFamily: "TimesNewRoman",
+    fontFamily: "Domine",
   },
 
   // Scalable headings
@@ -171,7 +194,7 @@ export const FONTS = {
   // Custom semantic roles
   heading: {
     fontFamily: "TrajanProBold",
-    lineHeight: moderateScale(25),
+    // lineHeight: moderateScale(25),
   },
   subheading: {
     fontFamily: "DMSerif",
@@ -194,6 +217,6 @@ export const FONTS = {
 // Export scaling functions
 export { scale, verticalScale, moderateScale }
 
-const appTheme = { COLORS, SIZES, FONTS,  scale, verticalScale, moderateScale }
+const appTheme = { COLORS, SIZES, FONTS, DIGIGOLD_COLORS, scale, verticalScale, moderateScale }
 
 export default appTheme;

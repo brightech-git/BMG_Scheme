@@ -22,6 +22,7 @@ import ProfileSidebar from './ProfileDashboard/ProfileContainer/ProfileSidebar'
 import AboutPage from './About/About'
 import RegisterPage from './OtpScreen/RegisterPage'
 import LoginPage from './OtpScreen/LoginPage'
+import PaymentDetailScreen from './PaymentHistory/DetailModal'
 
 export {
   MainLanding,
@@ -46,5 +47,6 @@ export {
   ProfileSidebar,
   AboutPage,
   RegisterPage,
-  LoginPage
+  LoginPage,
+  PaymentDetailScreen
 }

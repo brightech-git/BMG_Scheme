@@ -114,7 +114,7 @@ function OtpPage({ navigation, route }) {
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <ImageBackground 
-        source={require("../../assets/bg2.jpg")} 
+        source={require("../../assets/bg4.jpg")} 
         style={styles.backgroundImage}
       >
         <KeyboardAvoidingView 
@@ -143,7 +143,7 @@ function OtpPage({ navigation, route }) {
                   {otp.map((digit, index) => (
                     <LinearGradient
                       key={index}
-                      colors={digit ? [COLORS.primary, COLORS.secondary] : [COLORS.background, COLORS.background]}
+                      colors={digit ? [COLORS.gradientcolor7, COLORS.gradientcolor8] : [COLORS.background, COLORS.background]}
                       style={styles.otpInputWrapper}
                     >
                       <TextInput
@@ -166,7 +166,7 @@ function OtpPage({ navigation, route }) {
                   disabled={verifying}
                 >
                   <LinearGradient
-                    colors={verifying ? ["#555", "#444"] : [COLORS.gradientcolor5, COLORS.gradientcolor6]}
+                    colors={verifying ? ["#555", "#444"] : [COLORS.gradientcolor7, COLORS.gradientcolor8]}
                     style={styles.buttonGradient}
                   >
                     {verifying ? (

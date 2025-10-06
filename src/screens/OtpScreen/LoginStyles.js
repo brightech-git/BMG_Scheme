@@ -1,6 +1,7 @@
 // styles.js
 import { StyleSheet, Platform } from 'react-native';
 import appTheme from '../../utils/Theme';
+import { scale } from '../../utils';
 
 const { COLORS, SIZES, FONTS, moderateScale, verticalScale } = appTheme;
 
@@ -29,12 +30,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: verticalScale(10),
     paddingHorizontal: moderateScale(20),
-    marginTop: verticalScale(0), // Small top margin for breathing room
+    marginTop: verticalScale(5), // Small top margin for breathing room
   },
   logoImage: {
-    width: moderateScale(120),
-    height: moderateScale(120),
+    width: moderateScale(100),
+    height: moderateScale(100),
     resizeMode: 'contain',
+    borderRadius: scale(50),
     // borderRadius: SIZES.radius,
     // shadowColor: COLORS.shadow,
     // shadowOffset: {
@@ -64,7 +66,7 @@ const styles = StyleSheet.create({
     elevation: 12,
     borderWidth: 1,
     borderColor: COLORS.borderColor,
-    marginTop: verticalScale(10), // Added margin to separate from logo
+    marginTop: verticalScale(0), // Added margin to separate from logo
   },
 
   // Typography

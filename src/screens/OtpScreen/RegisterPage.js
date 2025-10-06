@@ -102,7 +102,7 @@ function RegisterPage({ navigation }) {
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <ImageBackground 
-        source={require("../../assets/bg2.jpg")} 
+        source={require("../../assets/bg4.jpg")} 
         style={styles.backgroundImage}
       >
         <KeyboardAvoidingView 
@@ -117,7 +117,7 @@ function RegisterPage({ navigation }) {
           >
             <View style={styles.container}>
               <View style={styles.logoContainer}>
-                <Image source={require("../../assets/logo2.png")} style={styles.logoImage} />
+                <Image source={require("../../assets/image/logo4.png")} style={styles.logoImage} />
               </View>
 
               <View style={styles.card}>
@@ -177,7 +177,7 @@ function RegisterPage({ navigation }) {
                   disabled={loading}
                 >
                   <LinearGradient
-                    colors={loading ? ["#555", "#444"] : [COLORS.gradientcolor5, COLORS.gradientcolor6]}
+                    colors={loading ? ["#555", "#444"] : [COLORS.gradientcolor7, COLORS.gradientcolor8]}
                     style={styles.buttonGradient}
                   >
                     {loading ? (

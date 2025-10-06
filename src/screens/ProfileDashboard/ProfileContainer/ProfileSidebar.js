@@ -15,6 +15,7 @@ import { MaterialIcons, Ionicons, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { TextDefault } from "../../../components";
 import { colors1 } from "../../../utils/colors";
+import { COLORS, FONTS } from "../../../utils/Theme";
 
 const { width } = Dimensions.get("window");
 
@@ -88,7 +89,7 @@ const DrawerMenu = ({ isVisible, onClose }) => {
             await AsyncStorage.removeItem("isMpinCreated");
             await AsyncStorage.removeItem("userPhoneNumber");
             onClose();
-            navigation.replace("OTP");
+            navigation.replace("LoginPage");
           } catch (error) {
             console.error("Error during logout:", error);
           }
@@ -126,7 +127,7 @@ const DrawerMenu = ({ isVisible, onClose }) => {
 
   const renderIcon = (item) => {
     const IconComponent = MaterialIcons;
-    return <IconComponent name={item.icon} size={24} color="#8B0000" />;
+    return <IconComponent name={item.icon} size={24} color={COLORS.primary} />;
   };
 
   return (
@@ -146,7 +147,7 @@ const DrawerMenu = ({ isVisible, onClose }) => {
             <View style={styles.profileHeader}>
               <View style={styles.profileIconContainer}>
                 <View style={styles.profileCircle}>
-                  <MaterialIcons name="account-circle" size={60} color="#333" />
+                  <MaterialIcons name="account-circle" size={60}  color={COLORS.primary} />
                 </View>
               </View>
               <TextDefault style={styles.welcomeText}>
@@ -179,7 +180,7 @@ const DrawerMenu = ({ isVisible, onClose }) => {
               <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                 <View style={styles.menuItemContent}>
                   <View style={styles.iconContainer}>
-                    <MaterialIcons name="logout" size={24} color="#8B0000" />
+                    <MaterialIcons name="logout" size={24}  color={COLORS.primary} />
                   </View>
                   <TextDefault style={styles.menuItemText}>Logout</TextDefault>
                 </View>
@@ -236,13 +237,15 @@ const styles = {
   },
   welcomeText: {
     fontSize: 20,
-    fontWeight: "bold",
+    // fontWeight: "bold",
     color: "#333",
     marginBottom: 5,
+    ...FONTS.heading
   },
   phoneText: {
     fontSize: 16,
     color: "#666",
+    ...FONTS.body1
   },
   menuContainer: {
     flex: 1,
@@ -266,6 +269,7 @@ const styles = {
     fontSize: 16,
     color: "#333",
     marginLeft: 15,
+    ...FONTS.body1
   },
 };
 
