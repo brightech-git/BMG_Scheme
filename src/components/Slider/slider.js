@@ -69,6 +69,7 @@ export default function EnhancedSlider() {
     { id: 1, image_path: '../../assets/image/slider3.jpg', url: 'https://bmgjewellers.com/shop-left?itemName=EARRINGS' },
     { id: 2, image_path: '../../assets/image/slider2.jpg', url: 'https://bmgjewellers.com/shop-left?itemName=NECKLACES' },
     { id: 3, image_path: '../../assets/image/slider1.jpg', url: 'https://bmgjewellers.com/shop-left?itemName=FESTIVAL' },
+    { id: 4, image_path: '../../assets/image/slider1.jpg', url: 'https://bmgjewellers.com/shop-left?itemName=FESTIVAL' },
   ];
 
   // Fetch banners

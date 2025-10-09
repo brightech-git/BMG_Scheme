@@ -4,6 +4,7 @@
     "slug": "akj-8",
     "version": "1.0.8",
     "orientation": "portrait",
+    "scheme":"myapp",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,

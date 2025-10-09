@@ -14,6 +14,7 @@ import GoldPlansSkeleton from "../../components/SkeletonLoader/GoldPlansSkeleton
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CommonHeader from "../../components/CommonHeader/CommonHeader";
+import { API_BASE_URL_OLD } from "../../Config/API";
 
 function GoldPlanScreen({ navigation }) {
   const [schemes, setSchemes] = useState([]);
@@ -24,7 +25,7 @@ function GoldPlanScreen({ navigation }) {
       try {
         setLoading(true);
         const response = await fetch(
-          "https://akj.brightechsoftware.com/v1/api/member/scheme"
+          `${API_BASE_URL_OLD}/member/scheme`
         );
         const data = await response.json();
         const formattedSchemes = data.map((s) => ({
@@ -33,6 +34,7 @@ function GoldPlanScreen({ navigation }) {
           description: s.SchemeSName,
         }));
         setSchemes(formattedSchemes);
+        console.log("Scheme",formattedSchemes)
       } catch (error) {
         console.error("Error fetching schemes:", error);
       } finally {

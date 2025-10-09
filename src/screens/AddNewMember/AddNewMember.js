@@ -4,9 +4,15 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import appTheme from "../../utils/Theme";
 import MemberDetailsPage from "./MemberDetailsPage";
 import SchemeDetailsPage from "./SchemeDetailsPage";
+import { API_BASE_URL_OLD } from "../../Config/API";
 
+const { COLORS } = appTheme;
 
-const { COLORS, SIZES } = appTheme;
+// Schemes array - Only BMG AMOUNT SCHEME and BMG DIGI SILVER
+const schemes = [
+  { SchemeId: 1, schemeName: "BMG AMOUNT SCHEME", SchemeSName: "BAS" },
+  { SchemeId: 2, schemeName: "BMG DIGI SILVER", SchemeSName: "BDS" },
+];
 
 const AddNewMember = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -14,7 +20,6 @@ const AddNewMember = () => {
   const route = useRoute();
   const { schemeId } = route.params || {};
 
-  // Member Details State
   const [memberData, setMemberData] = useState({
     namePrefix: "Mr",
     name: "",
@@ -34,7 +39,6 @@ const AddNewMember = () => {
     dob: null,
   });
 
-  // Scheme Details State
   const [schemeData, setSchemeData] = useState({
     selectedSchemeId: null,
     selectedGroupCodeObj: null,
@@ -46,8 +50,6 @@ const AddNewMember = () => {
 
   const [validationErrors, setValidationErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const API_BASE_URL = "https://akj.brightechsoftware.com";
 
   useEffect(() => {
     if (schemeId) {
@@ -69,11 +71,48 @@ const AddNewMember = () => {
     setCurrentStep(2);
   };
 
+  // Check if member already exists
+  const checkDuplicateMember = async () => {
+    try {
+      const query = `mobile=${memberData.mobile}&aadhaar=${memberData.aadharNumber}&pan=${memberData.panNumber}`;
+      const response = await fetch(`${API_BASE_URL_OLD}/member/check?${query}`);
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      if (data.exists) {
+        Alert.alert("Duplicate Member", data.message || "Member already exists.");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.log("Error checking duplicate member:", error);
+      return false; // Allow submit if check fails
+    }
+  };
+
+  // Generate random registration number
+  const generateRandomRegNo = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const handleSubmit = async (schemeFormData) => {
     if (isSubmitting) return;
-
     setIsSubmitting(true);
     setSchemeData(schemeFormData);
+
+    // Basic validation
+    if (!memberData.mobile || !memberData.aadharNumber || !memberData.panNumber) {
+      Alert.alert("Error", "Mobile, Aadhaar, and PAN are required.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Check for duplicate
+    const isDuplicate = await checkDuplicateMember();
+    if (isDuplicate) {
+      setIsSubmitting(false);
+      return;
+    }
 
     console.log("---- SUBMIT STARTED ----");
 
@@ -101,32 +140,29 @@ const AddNewMember = () => {
       appVer: "19.12.10.1",
     };
 
-    let createSchemeSummary;
-    if (schemeFormData.selectedSchemeId === 7) {
-      createSchemeSummary = {
-        schemeId: schemeFormData.selectedSchemeId,
-        groupCode: "DGA",
-        regNo: (Math.random() * 100000).toFixed(0),
-        joinDate: new Date().toISOString().slice(0, 19).replace("T", " "),
-        upDateTime2: new Date().toISOString().slice(0, 19).replace("T", " "),
-        openingDate: new Date().toISOString().slice(0, 19).replace("T", " "),
-        userId2: "9999",
-        goldWeightGram: parseFloat(schemeFormData.calculatedWeight || "0"),
-      };
-    } else {
-      createSchemeSummary = {
-        schemeId: schemeFormData.selectedSchemeId,
-        groupCode: schemeFormData.selectedGroupCodeObj,
-        regNo: schemeFormData.selectedCurrentRegNoObj,
-        joinDate: new Date().toISOString().slice(0, 19).replace("T", " "),
-        upDateTime2: new Date().toISOString().slice(0, 19).replace("T", " "),
-        openingDate: new Date().toISOString().slice(0, 19).replace("T", " "),
-        userId2: "9999",
-      };
+    const selectedScheme = schemes.find(s => s.SchemeId === schemeFormData.selectedSchemeId);
+    
+    if (!selectedScheme) {
+      Alert.alert("Error", "Please select a valid scheme.");
+      setIsSubmitting(false);
+      return;
     }
 
+    // Common createSchemeSummary for both schemes
+    const createSchemeSummary = {
+      schemeId: schemeFormData.selectedSchemeId,
+      groupCode: selectedScheme.SchemeSName,
+      regNo: generateRandomRegNo(),
+      joinDate: new Date().toISOString().slice(0, 19).replace("T", " "),
+      upDateTime2: new Date().toISOString().slice(0, 19).replace("T", " "),
+      openingDate: new Date().toISOString().slice(0, 19).replace("T", " "),
+      userId2: "9999",
+      amount: parseFloat(schemeFormData.amount || "0"),
+    };
+
+    // Scheme collect insert data
     const schemeCollectInsert = {
-      amount: parseFloat(schemeFormData.amount),
+      amount: parseFloat(schemeFormData.amount || "0"),
       modePay: schemeFormData.modePay,
       accCode: schemeFormData.accCode,
     };
@@ -138,9 +174,10 @@ const AddNewMember = () => {
     };
 
     console.log("Final Request Body:", JSON.stringify(requestBody, null, 2));
+    console.log("Selected Scheme:", selectedScheme.schemeName);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/api/member/create`, {
+      const response = await fetch(`${API_BASE_URL_OLD}/member/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -163,9 +200,16 @@ const AddNewMember = () => {
       const responseData = await response.text();
       console.log("Success Response Data:", responseData);
 
-      Alert.alert("Success", "Member added successfully!", [
-        { text: "OK", onPress: () => navigation.navigate("MainLanding") },
-      ]);
+      Alert.alert(
+        "Success", 
+        `Member added successfully to ${selectedScheme.schemeName}!`, 
+        [
+          { 
+            text: "OK", 
+            onPress: () => navigation.navigate("MainLanding") 
+          },
+        ]
+      );
 
       resetFormFields();
     } catch (error) {
@@ -230,7 +274,8 @@ const AddNewMember = () => {
             validationErrors={validationErrors}
             setValidationErrors={setValidationErrors}
             isSubmitting={isSubmitting}
-            API_BASE_URL={API_BASE_URL}
+            API_BASE_URL={API_BASE_URL_OLD}
+            schemes={schemes} // Pass schemes to SchemeDetailsPage
           />
         );
       default:
@@ -238,11 +283,7 @@ const AddNewMember = () => {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {renderStep()}
-    </View>
-  );
+  return <View style={styles.container}>{renderStep()}</View>;
 };
 
 const styles = StyleSheet.create({

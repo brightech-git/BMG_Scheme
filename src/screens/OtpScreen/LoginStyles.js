@@ -161,13 +161,56 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     
   },
-  googleIcon:{
-    width:40,
-    height:40
+  dividerContainer:{
+    alignItems:"center",
+    padding:10
   },
-  Google:{
-    flexDirection:"row"
-  }
+  dividerText:{
+    ...FONTS.h6,
+    color:COLORS.textLight
+  },
+Google: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+},
+googleButton: {
+  backgroundColor: COLORS.white,
+  padding: 5,
+  borderRadius: 10,
+  marginBottom: 20,
+  borderWidth: 1,
+  borderColor: COLORS.textLight,
+  width: '100%',
+},
+googleIcon: {
+  width: 40,
+  height: 40,
+  marginRight: 10,
+},
+googleButtonText: {
+  color: COLORS.black,
+  fontSize: 16,
+  fontWeight: '600',
+},
+disabledButton: {
+  opacity: 0.6,
+},
+loadingOverlay: {
+  ...StyleSheet.absoluteFillObject,
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 9999,
+},
+loadingText: {
+  color: COLORS.white,
+  marginTop: 20,
+  fontSize: 18,
+  fontWeight: '600',
+},
+  
 });
 
 // Platform-specific adjustments

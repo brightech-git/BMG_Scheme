@@ -1,143 +1,190 @@
-import { View, Text, Image, ScrollView, TouchableOpacity, ImageBackground, Alert } from 'react-native';
-import styles from './styles';
 import React, { useEffect, useState } from 'react';
+import {
+  View,
+  FlatList,
+  ImageBackground,
+  Alert,
+  StyleSheet,
+  RefreshControl,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import styles from './styles';
 import BottomTab from '../../components/BottomTab/BottomTab';
-import { colors } from '../../utils';
 import { TextDefault } from '../../components';
 import ProductCard from '../../ui/ProductCard/ProductCard';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductCardSkeleton from '../../components/SkeletonLoader/ProductCardSkeleton';
-import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import CommonHeader from '../../components/CommonHeader/CommonHeader';
+import { API_BASE_URL_OLD } from '../../Config/API';
+import { COLORS } from '../../utils/Theme';
 
 function DiscoverPlace({ navigation }) {
-  const [phoneSearchData, setPhoneSearchData] = useState([]);
   const [productData, setProductData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [status, setStatus] = useState(true);
-  const [accountDetails, setAccountDetails] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchAccountDetails = async (regno, groupcode) => {
+  const fetchPhoneSearchData = async () => {
     try {
-      const response = await fetch(`https://akj.brightechsoftware.com/v1/api/account?regno=${regno}&groupcode=${groupcode}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Account details HTTP error! status: ${response.status}`);
+      const storedPhoneNumber = await AsyncStorage.getItem('userPhoneNumber');
+      if (!storedPhoneNumber) {
+        setError('Phone number not found');
+        setLoading(false);
+        return;
       }
 
-      const data = await response.json();
-      setAccountDetails(data);
-    } catch (error) {
-      console.error('Error fetching account details:', error);
-      Alert.alert('Error', 'Failed to fetch account details');
+      console.log('Fetching data for phone:', storedPhoneNumber);
+      
+      // Step 1: Get accounts by phone
+      const phoneResponse = await fetch(
+        `${API_BASE_URL_OLD}/account/phonesearch?phoneNo=${storedPhoneNumber}`
+      );
+
+      if (!phoneResponse.ok) {
+        throw new Error(`Phone search HTTP error! status: ${phoneResponse.status}`);
+      }
+
+      const accounts = await phoneResponse.json();
+      console.log('Raw API response accounts:', accounts);
+      console.log('Number of accounts found:', accounts.length);
+
+      if (!accounts || accounts.length === 0) {
+        setError('No schemes available for this account, So please join the scheme and enjoy our benifits');
+        setProductData([]);
+        setLoading(false);
+        return;
+      }
+
+      // Deduplicate accounts based on regno and groupcode
+      const uniqueAccounts = accounts.filter((account, index, self) =>
+        index === self.findIndex(a => 
+          a.regno === account.regno && a.groupcode === account.groupcode
+        )
+      );
+
+      console.log(`After deduplication: ${uniqueAccounts.length} unique accounts`);
+
+      // Step 2: Fetch account details & amount/weight for each account
+      const resolvedProducts = await Promise.all(
+        uniqueAccounts.map(async (item) => {
+          try {
+            const groupcodeLower = item.groupcode.toLowerCase();
+
+            // Fetch account details
+            const accountRes = await fetch(
+              `${API_BASE_URL_OLD}/account?regno=${item.regno}&groupcode=${groupcodeLower}`
+            );
+            if (!accountRes.ok) throw new Error(`Account details HTTP error`);
+
+            const accountDetails = await accountRes.json();
+
+            // Fetch amount/weight
+            const amountWeightRes = await fetch(
+              `${API_BASE_URL_OLD}/getAmountWeight?REGNO=${item.regno}&GROUPCODE=${item.groupcode}`
+            );
+            if (!amountWeightRes.ok) throw new Error(`Amount/Weight HTTP error`);
+
+            const amountWeightJson = await amountWeightRes.json();
+
+            // Determine status
+            const currentDate = new Date();
+            const maturityDate = item.maturitydate ? new Date(item.maturitydate) : null;
+            const isActive = !maturityDate || currentDate < maturityDate;
+            const status = isActive ? 'Active' : 'Deactive';
+
+            return {
+              ...item,
+              accountDetails,
+              amountWeight: amountWeightJson[0] || null,
+              status,
+            };
+          } catch (err) {
+            console.error('Error fetching account data:', err);
+            return null; // skip invalid
+          }
+        })
+      );
+
+      const validProducts = resolvedProducts.filter(Boolean);
+      console.log('Valid products after processing:', validProducts.length);
+      setProductData(validProducts);
+
+      if (validProducts.length === 0) {
+        setError('No valid product data found');
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError(`Failed to fetch data: ${err.message}`);
+      Alert.alert('Fetch Error', `Failed to load data: ${err.message}`);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    const fetchPhoneSearchData = async () => {
-      const storedPhoneNumber = await AsyncStorage.getItem('userPhoneNumber');
-      console.log(storedPhoneNumber)
-      try {
-        const phoneResponse = await fetch(`https://akj.brightechsoftware.com/v1/api/account/phonesearch?phoneNo=${storedPhoneNumber}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!phoneResponse.ok) {
-          throw new Error(`Phone Search HTTP error! status: ${phoneResponse.status}`);
-        }
-
-        const phoneJson = await phoneResponse.json();
-        
-        if (phoneJson && phoneJson.length > 0) {
-          setPhoneSearchData(phoneJson);
-          
-          const productPromises = phoneJson.map(async (item) => {
-            try {
-              // Fetch account details for each item
-              const accountResponse = await fetch(`https://akj.brightechsoftware.com/v1/api/account?regno=${item.regno}&groupcode=${item.groupcode}`, {
-                method: 'GET',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json'
-                }
-              });
-
-              if (!accountResponse.ok) {
-                throw new Error(`Account details HTTP error! status: ${accountResponse.status}`);
-              }
-
-              const accountData = await accountResponse.json();
-
-              const amountWeightResponse = await fetch(
-                `https://akj.brightechsoftware.com/v1/api/getAmountWeight?REGNO=${item.regno}&GROUPCODE=${item.groupcode}`, 
-                {
-                  method: 'GET',
-                  headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                  }
-                }
-              );
-
-              if (!amountWeightResponse.ok) {
-                throw new Error(`Amount Weight HTTP error! status: ${amountWeightResponse.status}`);
-              }
-
-              const amountWeightJson = await amountWeightResponse.json();
-              const isActive = !(item.maturitydate);
-              const itemStatus = isActive ? 'Active' : 'Deactive';
-              setStatus(itemStatus);
-
-              return {
-                ...item,
-                amountWeight: amountWeightJson[0] || null,
-                status: itemStatus,
-                accountDetails: accountData // Pass the account data directly
-              };
-            } catch (amountError) {
-              console.error('Error fetching data:', amountError);
-              return {
-                ...item,
-                amountWeight: null,
-                status: 'Deactive',
-                accountDetails: null
-              };
-            }
-          });
-          
-          const resolvedProductData = await Promise.all(productPromises);
-          const validProductData = resolvedProductData.filter(item => item.amountWeight !== null);
-          setProductData(validProductData);
-          
-          if (validProductData.length === 0) {
-            setError('No valid product data found');
-          }
-        } else {
-          setError('No phone search data available');
-        }
-      } catch (err) {
-        console.error('Detailed fetch error:', err);
-        setError(`Failed fetch data: ${err.message}`);
-        Alert.alert('Fetch Error', `Failed to load data: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPhoneSearchData();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchPhoneSearchData();
+  };
+
+  const renderProductCard = ({ item }) => (
+    <ProductCard
+      productData={item}
+      navigation={navigation}
+    />
+  );
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={localStyles.loadingContainer}>
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+        </View>
+      );
+    }
+
+    if (error && productData.length === 0) {
+      return (
+        <View style={localStyles.errorContainer}>
+          <TextDefault style={localStyles.errorText}>
+            {error}
+          </TextDefault>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={productData}
+        renderItem={renderProductCard}
+        keyExtractor={(item, index) => `${item.regno}-${item.groupcode}-${index}`}
+        contentContainerStyle={localStyles.listContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+        ListEmptyComponent={
+          <View style={localStyles.emptyContainer}>
+            <TextDefault style={localStyles.emptyText}>
+              No schemes found
+            </TextDefault>
+          </View>
+        }
+      />
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -148,36 +195,10 @@ function DiscoverPlace({ navigation }) {
       >
         <SafeAreaView style={styles.safeArea}>
           <CommonHeader title="Your Schemes" />
-
-          <ScrollView
-            contentContainerStyle={styles.scrollViewContentContainer}
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.titleSpacer}>
-              {loading ? (
-                <>
-                  <ProductCardSkeleton />
-                  <ProductCardSkeleton />
-                  <ProductCardSkeleton />
-                </>
-              ) : productData && productData.length > 0 ? (
-                productData.map((item, index) => (
-                  <ProductCard
-                    key={index}
-                    productData={item}
-                    loading={loading}
-                    error={error}
-                    navigation={navigation}
-                    status={status}
-                    accountDetails={item.accountDetails}
-                  />
-                ))
-              ) : (
-                <TextDefault textColor={colors.redColor}>No products available.</TextDefault>
-              )}
-            </View>
-          </ScrollView>
+          
+          <View style={localStyles.contentContainer}>
+            {renderContent()}
+          </View>
 
           <BottomTab screen="SCHEMES" />
         </SafeAreaView>
@@ -185,5 +206,40 @@ function DiscoverPlace({ navigation }) {
     </View>
   );
 }
+
+const localStyles = StyleSheet.create({
+  contentContainer: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  listContainer: {
+    paddingBottom: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    color: COLORS.danger,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  emptyText: {
+    color: COLORS.textLight,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+});
 
 export default DiscoverPlace;

@@ -22,14 +22,15 @@ import styles from "./Styles";
 import { LinearGradient } from "expo-linear-gradient";
 import DrawerMenu from "../../screens/ProfileDashboard/ProfileContainer/ProfileSidebar";
 import { COLORS } from "../../utils/Theme";
+import { API_BASE_URL_OLD } from "../../Config/API";
 
 // ========== Constants ==========
-const API_BASE_URL = "https://akj.brightechsoftware.com/v1/api";
+
 const ANIMATION_DURATION = 2000;
 const SILVER_ANIMATION_DELAY = 100;
 
 const API_ENDPOINTS = {
-  todayRate: `${API_BASE_URL}/account/todayrate`,
+  todayRate: `${API_BASE_URL_OLD}/account/todayrate`,
 };
 
 // ========== Helpers ==========
@@ -156,7 +157,7 @@ function Header() {
       }
 
       const data = await response.json();
-      setGoldRate(data.Rate);
+      setGoldRate(data.GOLDRATE);
       setSilverRate(data.SILVERRATE);
       setRateUpdated(formatDate(new Date()));
     } catch (error) {

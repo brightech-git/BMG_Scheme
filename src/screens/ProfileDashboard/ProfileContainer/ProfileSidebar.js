@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import { TextDefault } from "../../../components";
 import { colors1 } from "../../../utils/colors";
 import { COLORS, FONTS } from "../../../utils/Theme";
+import { API_BASE_URL_OLD } from "../../../Config/API";
 
 const { width } = Dimensions.get("window");
 
@@ -33,7 +34,7 @@ const DrawerMenu = ({ isVisible, onClose }) => {
           setUserPhone(phoneNumber);
 
           const response = await fetch(
-            `https://akj.brightechsoftware.com/v1/api/account/phonesearch?phoneNo=${phoneNumber}`,
+            `${API_BASE_URL_OLD}/account/phonesearch?phoneNo=${phoneNumber}`,
             {
               method: "GET",
               headers: {

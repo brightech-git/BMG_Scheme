@@ -29,6 +29,8 @@ function Drawer() {
       <NavigationStack.Screen name='ProfileSidebar' component={Screen.ProfileSidebar}/>
       <NavigationStack.Screen name='AboutPage' component={Screen.AboutPage}/>
       <NavigationStack.Screen name='PaymentDetailScreen' component={Screen.PaymentDetailScreen}/>
+      <NavigationStack.Screen name='PaymentGateway' component={Screen.PaymentGateway}/>
+      
       {/* Removed RegisterPage and LoginPage from here */}
     </NavigationStack.Navigator>
   );
@@ -67,6 +69,7 @@ function AppContainer() {
         <MainStack.Screen name="LoginPage" component={Screen.LoginPage} />
         <MainStack.Screen name="RegisterPage" component={Screen.RegisterPage} />
         <MainStack.Screen name="OTP" component={Screen.OTP} />
+        <MainStack.Screen name="MainLanding" component={Screen.MainLanding} />
         
         {/* MPIN Screens */}
         <MainStack.Screen name="MpinScreen" component={Screen.MpinScreen} />

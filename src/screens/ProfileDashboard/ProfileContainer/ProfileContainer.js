@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { TextDefault } from '../../../components';
 import { colors } from '../../../utils';
 import { colors1 } from '../../../utils/colors';
+import { API_BASE_URL_OLD } from '../../../Config/API';
 
 function ProfileContainer(props) {
   const navigation = useNavigation();
@@ -32,7 +33,7 @@ function ProfileContainer(props) {
           setUserPhone(formattedPhone);
           
           // Fetch user details using phone number
-          const response = await fetch(`https://akj.brightechsoftware.com/v1/api/account/phonesearch?phoneNo=${phoneNumber}`, {
+          const response = await fetch(`${API_BASE_URL_OLD}/account/phonesearch?phoneNo=${phoneNumber}`, {
             method: 'GET',
             headers: {
               'Accept': 'application/json',

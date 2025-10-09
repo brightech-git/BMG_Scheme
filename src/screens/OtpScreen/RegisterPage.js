@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getHash } from "react-native-otp-verify";
 import { showToast } from "../../utils/toast";
 import appTheme from "../../utils/Theme";
 import styles from './RegisterStyles'
@@ -30,6 +31,27 @@ function RegisterPage({ navigation }) {
   const [password, setPassword] = useState("");
   const [isPhoneValid, setIsPhoneValid] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [appHash, setAppHash] = useState("");
+
+  // Get app hash on component mount
+  useEffect(() => {
+    initializeAppHash();
+  }, []);
+
+  const initializeAppHash = async () => {
+    try {
+      if (Platform.OS === "android") {
+        const hashCodes = await getHash();
+        console.log("App Hash Codes:", hashCodes);
+        if (hashCodes && hashCodes.length > 0) {
+          setAppHash(hashCodes[0]);
+          console.log("Using App Hash:", hashCodes[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error getting app hash:", error);
+    }
+  };
 
   const handlePhoneChange = (text) => {
     const cleaned = text.replace(/\D/g, "");
@@ -51,26 +73,148 @@ function RegisterPage({ navigation }) {
     }
 
     setLoading(true);
-    const res = await userService.registerUser({ 
-      username, 
-      email, 
-      contactNumber: phone, 
-      password ,
-       hashKey:"d4riq2SwBaq"
+    
+    try {
+      const res = await userService.registerUser({ 
+        username, 
+        email, 
+        contactNumber: phone, 
+        password,
+        hashKey: appHash || ""
+      });
+
+      console.log("Registration response:", res);
+
+      if (res.success) {
+        // Save full user data for resend OTP and OTP verification
+        await AsyncStorage.setItem("tempUserData", JSON.stringify({
+          username,
+          email,
+          phone,
+          password,
+          appHash
+        }));
+        
+        showToast("Registration successful! OTP sent.");
+        
+        // Navigate to OTP page with phone number and hash
+        navigation.navigate("OTP", { 
+          phoneNumber: phone,
+          appHash: appHash 
+        });
+      } else {
+        handleRegistrationError(res.error, res.details);
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      showToast("Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegistrationError = (error, details = {}) => {
+    console.log("Registration Error Details:", details);
+    
+    const errorMessage = error?.toString() || "";
+    const errorLower = errorMessage.toLowerCase();
+    const detailsMessage = details?.message?.toString() || "";
+    const detailsLower = detailsMessage.toLowerCase();
+
+    console.log("Error analysis:", {
+      errorMessage,
+      errorLower,
+      detailsMessage,
+      detailsLower
     });
 
-    if (res.success) {
-      // 🔹 Save full user data for resend OTP
-      await AsyncStorage.setItem("tempUserData", JSON.stringify({
-        username,
-        email,
-        phone,
-        password
-      }));
-      showToast("Registration successful! OTP sent.");
-      navigation.navigate("OTP", { phoneNumber: phone });
-    } else {
-      if (res.error?.toLowerCase().includes("contact number already exists")) {
+    // Check for email already exists
+    if (errorLower.includes("email already exists") || 
+        detailsLower.includes("email already exists") ||
+        detailsMessage === "Email already exists") {
+      showToast("This email is already registered. Please use another email or login.");
+      setEmail("");
+      // Auto-navigate to login after a brief delay
+      setTimeout(() => {
+        Alert.alert(
+          "Email Already Exists",
+          "This email is already registered. Would you like to login?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Login", 
+              onPress: () => navigation.navigate("LoginPage", { prefillEmail: email }) 
+            }
+          ]
+        );
+      }, 1500);
+      return;
+    }
+
+    // Check for phone number already exists
+    if (errorLower.includes("contact number already exists") || 
+        errorLower.includes("phone already exists") ||
+        errorLower.includes("number already exists") ||
+        detailsLower.includes("contact number already exists") ||
+        detailsLower.includes("phone already exists") ||
+        detailsLower.includes("number already exists")) {
+      Alert.alert(
+        "Number Already Registered",
+        "This phone number is already registered. Would you like to login instead?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Login", 
+            onPress: () => navigation.navigate("LoginPage", { prefillPhone: phone }) 
+          }
+        ]
+      );
+      return;
+    }
+
+    // Check for username already exists
+    if (errorLower.includes("username already exists") || 
+        detailsLower.includes("username already exists")) {
+      showToast("This username is already taken. Please choose another or login with existing account.");
+      setUsername("");
+      // Auto-navigate to login after a brief delay
+      setTimeout(() => {
+        Alert.alert(
+          "Username Already Exists",
+          "This username is already taken. Would you like to login?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Login", 
+              onPress: () => navigation.navigate("LoginPage") 
+            }
+          ]
+        );
+      }, 1500);
+      return;
+    }
+
+    // Check for generic "already exists" messages
+    if (errorLower.includes("already exists") || 
+        detailsLower.includes("already exists")) {
+      // Try to extract which field already exists
+      if (errorLower.includes("email") || detailsLower.includes("email")) {
+        showToast("This email is already registered. Please use another email or login.");
+        setEmail("");
+        setTimeout(() => {
+          Alert.alert(
+            "Email Already Exists",
+            "This email is already registered. Would you like to login?",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Login", 
+                onPress: () => navigation.navigate("LoginPage", { prefillEmail: email }) 
+              }
+            ]
+          );
+        }, 1500);
+      } else if (errorLower.includes("phone") || errorLower.includes("contact") || errorLower.includes("number")) {
         Alert.alert(
           "Number Already Registered",
           "This phone number is already registered. Would you like to login instead?",
@@ -82,14 +226,34 @@ function RegisterPage({ navigation }) {
             }
           ]
         );
-      } else if (res.error?.toLowerCase().includes("email already exists")) {
-        showToast("This email is already registered. Please use another email.");
-        setEmail("");
+      } else if (errorLower.includes("username") || detailsLower.includes("username")) {
+        showToast("This username is already taken. Please choose another or login with existing account.");
+        setUsername("");
+        setTimeout(() => {
+          Alert.alert(
+            "Username Already Exists",
+            "This username is already taken. Would you like to login?",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Login", 
+                onPress: () => navigation.navigate("LoginPage") 
+              }
+            ]
+          );
+        }, 1500);
       } else {
-        showToast(res.error || "Registration failed");
+        // Generic already exists message
+        showToast("This user already exists. Redirecting to login...");
+        setTimeout(() => {
+          navigation.navigate("LoginPage");
+        }, 2000);
       }
+      return;
     }
-    setLoading(false);
+
+    // Default error handling
+    showToast(error || detailsMessage || "Registration failed");
   };
 
   const navigateToLogin = () => {
@@ -132,6 +296,8 @@ function RegisterPage({ navigation }) {
                   onChangeText={setUsername}
                   placeholder="Enter username"
                   placeholderTextColor={COLORS.label}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
 
                 <Text style={styles.label}>Email</Text>
@@ -143,6 +309,7 @@ function RegisterPage({ navigation }) {
                   placeholderTextColor={COLORS.textLight}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
                 />
 
                 <Text style={styles.label}>Mobile Number</Text>
@@ -170,6 +337,7 @@ function RegisterPage({ navigation }) {
                   placeholder="Enter password"
                   placeholderTextColor={COLORS.textLight}
                   secureTextEntry
+                  autoCapitalize="none"
                 />
 
                 <TouchableOpacity
@@ -182,7 +350,7 @@ function RegisterPage({ navigation }) {
                     style={styles.buttonGradient}
                   >
                     {loading ? (
-                      <ActivityIndicator color={COLORS.black} />
+                      <ActivityIndicator color={COLORS.white} />
                     ) : (
                       <Text style={styles.primaryButtonText}>Register</Text>
                     )}
@@ -190,7 +358,8 @@ function RegisterPage({ navigation }) {
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={navigateToLogin} style={{flexDirection: 'row', justifyContent: 'center'}}>
-                  <Text style={styles.linkText}>Already have an account? </Text><Text style={styles.linkText1}> Login</Text>
+                  <Text style={styles.linkText}>Already have an account? </Text>
+                  <Text style={styles.linkText1}> Login</Text>
                 </TouchableOpacity>
               </View>
             </View>

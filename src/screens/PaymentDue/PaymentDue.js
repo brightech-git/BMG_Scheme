@@ -18,6 +18,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL_OLD } from '../../Config/API';
 
 const { width } = Dimensions.get('window');
 
@@ -223,7 +224,7 @@ const SchemesScreen = ({ navigation }) => {
         }
 
         const response = await fetch(
-          `https://akj.brightechsoftware.com/v1/api/account/phonesearch?phoneNo=${storedPhoneNumber}`
+          `${API_BASE_URL_OLD}/account/phonesearch?phoneNo=${storedPhoneNumber}`
         );
         
         if (!response.ok) {
@@ -282,7 +283,7 @@ const SchemesScreen = ({ navigation }) => {
       
       // Fetch account details
       const accountRes = await fetch(
-        `https://akj.brightechsoftware.com/v1/api/account?regno=${scheme.regno}&groupcode=${scheme.groupcode}`
+        `${API_BASE_URL_OLD}/account?regno=${scheme.regno}&groupcode=${scheme.groupcode}`
       );
       const accountDetails = await accountRes.json();
 

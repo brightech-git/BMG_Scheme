@@ -3,38 +3,44 @@ import {
   View,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TextDefault } from '../../components';
-import { colors, scale } from '../../utils';
 import { COLORS, SIZES, FONTS, moderateScale } from '../../utils/Theme';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-function ProductCard({
-  productData,
-  loading,
-  error,
-  navigation,
-  status,
-  accountDetails,
-}) {
-  if (loading) {
+function ProductCard({ productData, navigation }) {
+  // If productData is an array, take the first item (for single card display)
+  // If it's a single object, use it directly
+  const item = Array.isArray(productData) ? productData[0] : productData;
+
+  if (!item) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={styles.emptyContainer}>
+        <MaterialIcons name="inbox" size={40} color={COLORS.gray} />
+        <TextDefault style={styles.emptyText}>No product data</TextDefault>
       </View>
     );
   }
 
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <MaterialIcons name="error-outline" size={40} color={COLORS.danger} />
-        <TextDefault style={styles.errorText}>{error}</TextDefault>
-      </View>
-    );
-  }
+  const { pname, regno, groupcode, maturityDate } = item;
+  const accountDetails = item.accountDetails;
+  const { schemeSummary } = accountDetails || {};
+  const isActive = item.status === 'Active';
+
+  // Determine scheme type based on schemeSName or fallback to groupcode
+  const schemeSName = schemeSummary?.schemeSName;
+  const isBMGAmountScheme = schemeSName === 'BAS' || groupcode === 'BMB';
+  const isBMGDigiSilver = schemeSName === 'BDS' || groupcode === 'BDS';
+
+  // For BMG Amount Scheme (BAS): Show installments
+  // For BMG Digi Silver (BDS): Show amount as silver value/weight
+  const statValue1 = isBMGAmountScheme
+    ? `${schemeSummary?.schemaSummaryTransBalance?.insPaid || 0}/${schemeSummary?.instalment || 0}`
+    : `₹${parseFloat(schemeSummary?.amount || accountDetails?.amount || 0).toLocaleString('en-IN')}`;
+  const statLabel1 = isBMGAmountScheme ? 'Installments' : 'Silver Value';
+
+  const totalAmount = `₹${parseFloat(schemeSummary?.amount || accountDetails?.amount || 0).toLocaleString('en-IN')}`;
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -46,23 +52,32 @@ function ProductCard({
     });
   };
 
-  const isDreamGoldPlan =
-    accountDetails?.schemeSummary?.schemeName?.trim() === 'DREAM GOLD PLAN';
+  const handleViewDetails = () => {
+    navigation.navigate('ProductDescription', {
+      productData: item,
+      status: item.status,
+      accountDetails,
+    });
+  };
+
+  const handlePayNow = () => {
+    const isDigiSilverPlan = isBMGDigiSilver;
+    navigation.navigate('Buy', {
+      productData: item,
+      status: item.status,
+      accountDetails,
+      isDigiSilverPlan,
+    });
+  };
 
   return (
     <TouchableOpacity
       activeOpacity={0.8}
-      onPress={() =>
-        navigation.navigate('ProductDescription', {
-          productData,
-          status,
-          accountDetails,
-        })
-      }
-      style={styles.cardContainer}
+      onPress={handleViewDetails}
+      style={[styles.cardContainer, !isActive && styles.inactiveCard]}
     >
       <LinearGradient
-        colors={COLORS.gradientPrimary}
+        colors={isActive ? COLORS.gradientPrimary : ['#bdc3c7', '#95a5a6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientBackground}
@@ -75,20 +90,20 @@ function ProductCard({
             </View>
             <View style={styles.headerInfo}>
               <TextDefault style={styles.schemeCode}>
-                {productData.groupcode} - {productData.regno}
+                {groupcode} - {regno}
               </TextDefault>
-              <TextDefault style={styles.schemeName} numberOfLines={1}>
-                {productData.pname}
-              </TextDefault>
+              {/* <TextDefault style={styles.schemeName} numberOfLines={1}>
+                {pname} {isBMGDigiSilver ? '(BMG Digi Silver)' : isBMGAmountScheme ? '(BMG Amount Scheme)' : ''}
+              </TextDefault> */}
             </View>
           </View>
           
-          {status && (
+          {item.status && (
             <View style={[
               styles.statusBadge,
-              { backgroundColor: status === 'Active' ? COLORS.success : COLORS.danger }
+              { backgroundColor: isActive ? COLORS.success : COLORS.danger }
             ]}>
-              <TextDefault style={styles.statusText}>{status}</TextDefault>
+              <TextDefault style={styles.statusText}>{item.status}</TextDefault>
             </View>
           )}
         </View>
@@ -97,37 +112,35 @@ function ProductCard({
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
             <MaterialIcons 
-              name={isDreamGoldPlan ? "event-note" : "scale"} 
+              name={isBMGAmountScheme ? "event-note" : "scale"} 
               size={20} 
-              color="rgba(255,255,255,0.9)" 
+              color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} 
             />
-            <TextDefault style={styles.statLabel}>
-              {isDreamGoldPlan ? 'Installments' : 'Weight Saved'}
+            <TextDefault style={[styles.statLabel, { color: isActive ? 'rgba(255,255,255,0.9)' : '#7f8c8d' }]}>
+              {statLabel1}
             </TextDefault>
-            <TextDefault style={styles.statValue}>
-              {isDreamGoldPlan
-                ? `${accountDetails?.schemeSummary?.schemaSummaryTransBalance?.insPaid || 0}/${accountDetails?.schemeSummary?.instalment || 0}`
-                : `${productData.amountWeight?.Weight || 0}g`}
+            <TextDefault style={[styles.statValue, { color: isActive ? COLORS.white : '#7f8c8d' }]}>
+              {statValue1}
             </TextDefault>
           </View>
 
           <View style={styles.statDivider} />
 
           <View style={styles.statBox}>
-            <MaterialIcons name="payments" size={20} color="rgba(255,255,255,0.9)" />
-            <TextDefault style={styles.statLabel}>Total Amount</TextDefault>
-            <TextDefault style={styles.statValue}>
-              ₹{parseFloat(productData.amountWeight?.Amount || 0).toLocaleString('en-IN')}
+            <MaterialIcons name="payments" size={20} color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} />
+            <TextDefault style={[styles.statLabel, { color: isActive ? 'rgba(255,255,255,0.9)' : '#7f8c8d' }]}>Total Amount</TextDefault>
+            <TextDefault style={[styles.statValue, { color: isActive ? COLORS.white : '#7f8c8d' }]}>
+              {totalAmount}
             </TextDefault>
           </View>
 
           <View style={styles.statDivider} />
 
           <View style={styles.statBox}>
-            <MaterialIcons name="event" size={20} color="rgba(255,255,255,0.9)" />
-            <TextDefault style={styles.statLabel}>Maturity</TextDefault>
-            <TextDefault style={styles.statValue} numberOfLines={1}>
-              {formatDate(productData.maturityDate)}
+            <MaterialIcons name="event" size={20} color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} />
+            <TextDefault style={[styles.statLabel, { color: isActive ? 'rgba(255,255,255,0.9)' : '#7f8c8d' }]}>Maturity</TextDefault>
+            <TextDefault style={[styles.statValue, { color: isActive ? COLORS.white : '#7f8c8d' }]} numberOfLines={1}>
+              {formatDate(maturityDate)}
             </TextDefault>
           </View>
         </View>
@@ -136,34 +149,23 @@ function ProductCard({
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() =>
-              navigation.navigate('ProductDescription', {
-                productData,
-                status,
-                accountDetails,
-              })
-            }
+            onPress={handleViewDetails}
             activeOpacity={0.7}
           >
             <MaterialIcons name="visibility" size={16} color={COLORS.primary} />
             <TextDefault style={styles.actionButtonText}>View Details</TextDefault>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.actionButton, styles.payButton]}
-            onPress={() =>
-              navigation.navigate('Buy', {
-                productData,
-                status,
-                accountDetails,
-                isDreamGoldPlan,
-              })
-            }
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="payment" size={16} color={COLORS.white} />
-            <TextDefault style={styles.payButtonText}>Pay Now</TextDefault>
-          </TouchableOpacity>
+          {isActive && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.payButton]}
+              onPress={handlePayNow}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="payment" size={16} color={COLORS.white} />
+              <TextDefault style={styles.payButtonText}>Pay Now</TextDefault>
+            </TouchableOpacity>
+          )}
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -171,8 +173,22 @@ function ProductCard({
 }
 
 const styles = StyleSheet.create({
-  cardContainer: {
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: moderateScale(20),
     margin: moderateScale(8),
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: SIZES.radius_lg,
+  },
+  emptyText: {
+    color: COLORS.gray,
+    marginTop: moderateScale(10),
+    fontSize: moderateScale(14),
+    textAlign: 'center',
+  },
+  cardContainer: {
+    margin: moderateScale(15),
     borderRadius: SIZES.radius_lg,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -181,25 +197,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  inactiveCard: {
+    shadowOpacity: 0.1,
+    elevation: 2,
+  },
   gradientBackground: {
     borderRadius: SIZES.radius_lg,
     padding: moderateScale(16),
-  },
-  loadingContainer: {
-    padding: moderateScale(40),
-    alignItems: 'center',
-  },
-  errorContainer: {
-    padding: moderateScale(30),
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    margin: moderateScale(8),
-    borderRadius: SIZES.radius_lg,
-  },
-  errorText: {
-    color: COLORS.danger,
-    marginTop: moderateScale(10),
-    fontSize: moderateScale(13),
   },
   headerSection: {
     flexDirection: 'row',
@@ -227,16 +231,14 @@ const styles = StyleSheet.create({
   schemeCode: {
     color: COLORS.white,
     fontSize: moderateScale(14),
-    // fontWeight: '600',
     opacity: 0.9,
     marginBottom: moderateScale(2),
-    ...FONTS.subheading
+    ...FONTS.subheading,
   },
   schemeName: {
     color: COLORS.white,
     fontSize: moderateScale(14),
-    // fontWeight: '700',
-    ...FONTS.body1
+    ...FONTS.body1,
   },
   statusBadge: {
     paddingHorizontal: moderateScale(10),
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: moderateScale(10),
     fontWeight: '700',
-  ...FONTS.body1
+    ...FONTS.body1,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -264,18 +266,16 @@ const styles = StyleSheet.create({
     gap: moderateScale(4),
   },
   statLabel: {
-    color: 'rgb(255, 255, 255)',
     fontSize: moderateScale(11),
     fontWeight: '500',
     textAlign: 'center',
-    ...FONTS.body1
+    ...FONTS.body1,
   },
   statValue: {
-    color: COLORS.white,
     fontSize: moderateScale(12),
     fontWeight: '700',
     textAlign: 'center',
-    ...FONTS.body1
+    ...FONTS.body1,
   },
   statDivider: {
     width: 1,
@@ -305,28 +305,13 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: moderateScale(12),
     fontWeight: '700',
-    ...FONTS.body1
+    ...FONTS.body1,
   },
   payButtonText: {
     color: COLORS.white,
     fontSize: moderateScale(12),
     fontWeight: '700',
-     ...FONTS.body1
-  },
-  infoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    paddingVertical: moderateScale(8),
-    paddingHorizontal: moderateScale(12),
-    borderRadius: moderateScale(8),
-    gap: moderateScale(6),
-  },
-  infoBannerText: {
-    color: COLORS.white,
-    fontSize: moderateScale(11),
-    fontWeight: '600',
+    ...FONTS.body1,
   },
 });
 

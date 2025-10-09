@@ -15,12 +15,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  getHash,
-  startOtpListener,
-  useOtpVerify,
-  removeListener,
-} from "react-native-otp-verify";
+import { getHash, useOtpVerify, removeListener } from "react-native-otp-verify";
 import { showToast } from "../../utils/toast";
 import appTheme from "../../utils/Theme";
 import styles from "./OtpStyles.js";
@@ -34,184 +29,159 @@ function OtpPage({ navigation, route }) {
   const [resendTimer, setResendTimer] = useState(30);
   const [autoCompleteOtp, setAutoCompleteOtp] = useState("");
   const [appHash, setAppHash] = useState([]);
+  const [waitingForOtp, setWaitingForOtp] = useState(true);
+  const [smsListenerReady, setSmsListenerReady] = useState(false);
+  const [showFullScreenLoader, setShowFullScreenLoader] = useState(false); // 🔹 NEW STATE
+
   const inputRefs = useRef([]);
-  
   const phoneNumber = route.params?.phoneNumber || "";
 
-  // Use the OTP verification hook
-  const {
-    hash,
-    otp: hookOtp,
-    message,
-    timeoutError,
-    stopListener,
-    startListener,
-  } = useOtpVerify({ numberOfDigits: 6 });
+  const { message, timeoutError, startListener, stopListener } = useOtpVerify({
+    numberOfDigits: 6,
+  });
 
+  // -------------------- TIMER --------------------
   useEffect(() => {
     if (resendTimer > 0) {
-      const timer = setInterval(() => setResendTimer(prev => prev - 1), 1000);
+      const timer = setInterval(() => setResendTimer((prev) => prev - 1), 1000);
       return () => clearInterval(timer);
     }
   }, [resendTimer]);
 
-  // Auto-verify when manual OTP is complete
-  useEffect(() => {
-    if (otp.join("").length === 6) {
-      console.log("OTP completed, auto-verifying:", otp.join(""));
-      handleVerifyOtp();
-    }
-  }, [otp]);
-
-  // Handle OTP from SMS using react-native-otp-verify hook
-  useEffect(() => {
-    if (hookOtp && hookOtp.length === 6) {
-      console.log("Hook OTP detected:", hookOtp);
-
-      // Update both states
-      setAutoCompleteOtp(hookOtp);
-      const otpArray = hookOtp.split("");
-      setOtp(otpArray);
-
-      showToast("OTP detected from SMS automatically!");
-
-      // Auto-verify if all 6 digits are detected
-      setTimeout(() => {
-        handleVerifyOtp();
-      }, 500);
-    }
-  }, [hookOtp]);
-
-  // Enhanced OTP detection from SMS message
+  // -------------------- DETECT OTP FROM MESSAGE --------------------
   const detectOtpFromMessage = (smsMessage) => {
     if (!smsMessage) return null;
+    console.log("📩 Analyzing SMS for OTP:", smsMessage);
 
-    console.log("Analyzing SMS message for OTP:", smsMessage);
-
-    // Multiple OTP patterns to try (in order of priority)
     const patterns = [
-      /(?:otp|OTP)[\s:]*is[\s:]*(\d{6})/i, // "Your otp is 456789"
-      /(?:otp|OTP)[\s:]*(\d{6})/i, // "OTP: 123456"
-      /(?:code|CODE)[\s:]*(\d{6})/i, // "Code: 123456"
-      /\b(\d{6})\b/, // 6 consecutive digits
-      /(\d{6})[\s\n]*Pw9NWl4kidf/, // Your specific hash pattern
+      /your\s+otp\s+(?:for\s+\w+\s+)?is\s*(\d{6})/i,
+      /otp.*?is\s*[:\-]?\s*(\d{6})/i,
+      /otp[:\s]+(\d{6})/i,
+      /\b(\d{6})\b/,
     ];
 
     for (const pattern of patterns) {
       const match = smsMessage.match(pattern);
       if (match) {
-        // Return the OTP (might be in capture group 1 or the full match)
         const detected = match[1] || match[0];
-        console.log("Pattern matched:", pattern, "OTP found:", detected);
+        console.log("✅ OTP Detected:", detected);
         return detected;
       }
     }
 
+    console.log("❌ No OTP detected");
     return null;
   };
 
-  // Handle SMS message detection
+  // -------------------- HANDLE INCOMING SMS --------------------
   useEffect(() => {
-    if (message) {
-      console.log("SMS message received:", message);
-
+    if (message && smsListenerReady) {
+      console.log("📨 SMS message received:", message);
       const detectedOtp = detectOtpFromMessage(message);
+
       if (detectedOtp && detectedOtp.length === 6) {
-        console.log("OTP detected via function:", detectedOtp);
-
-        // Update the auto-complete field
         setAutoCompleteOtp(detectedOtp);
-
-        // Also update the manual OTP fields
-        const otpArray = detectedOtp.split("");
-        setOtp(otpArray);
-
+        setOtp(detectedOtp.split(""));
+        setWaitingForOtp(false);
+        setShowFullScreenLoader(false); // 🔹 Hide loader when OTP detected
         showToast("OTP detected automatically!");
 
-        // Auto-verify
         setTimeout(() => {
-          if (detectedOtp.length === 6) {
-            handleVerifyOtp();
-          }
-        }, 1000);
-      } else {
-        console.log("No valid OTP detected in message");
+          handleVerifyOtp();
+        }, 800);
       }
     }
-  }, [message]);
+  }, [message, smsListenerReady]);
 
-  // Handle timeout error
+  // -------------------- WAITING LOADER (15 seconds) --------------------
+  useEffect(() => {
+    // Start waiting for OTP for 15 seconds only if SMS listener is ready
+    if (smsListenerReady && Platform.OS === "android") {
+      setShowFullScreenLoader(true); // 🔹 Show full screen loader when waiting starts
+      
+      const timer = setTimeout(() => {
+        setWaitingForOtp(false);
+        setShowFullScreenLoader(false); // 🔹 Hide loader when timeout
+        showToast("You can enter OTP manually");
+      }, 15000); // 15 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [smsListenerReady]);
+
+  // -------------------- HANDLE TIMEOUT --------------------
   useEffect(() => {
     if (timeoutError) {
-      console.log("SMS listener timeout");
-      showToast("SMS listener timeout. Please enter OTP manually.");
+      showToast("OTP detection timeout. Please enter it manually.");
+      setWaitingForOtp(false);
+      setShowFullScreenLoader(false); // 🔹 Hide loader on timeout
     }
   }, [timeoutError]);
 
-  // Get app hash on component mount
+  // -------------------- INITIALIZE LISTENER --------------------
   useEffect(() => {
+    const initializeSMSListener = async () => {
+      if (Platform.OS === "android") {
+        try {
+          console.log("🔄 Initializing SMS listener...");
+          const hashCodes = await getHash();
+          setAppHash(hashCodes);
+          console.log("📲 App Hash:", hashCodes);
+          
+          if (startListener) {
+            startListener();
+            setSmsListenerReady(true);
+            console.log("✅ SMS listener started successfully");
+          }
+        } catch (error) {
+          console.error("❌ Error initializing SMS listener:", error);
+          setWaitingForOtp(false);
+          setSmsListenerReady(false);
+          setShowFullScreenLoader(false); // 🔹 Hide loader on error
+        }
+      } else {
+        // For iOS, don't show waiting indicator
+        setWaitingForOtp(false);
+        setSmsListenerReady(false);
+        setShowFullScreenLoader(false);
+      }
+    };
+
     initializeSMSListener();
+
     return () => {
-      // Cleanup SMS listeners
       try {
         removeListener();
-        if (stopListener) stopListener();
+        stopListener && stopListener();
+        setSmsListenerReady(false);
+        setShowFullScreenLoader(false); // 🔹 Hide loader on cleanup
       } catch (error) {
-        console.log("Error cleaning up SMS listeners:", error);
+        console.error("Cleanup SMS listener error:", error);
       }
     };
   }, []);
 
-  // Initialize SMS listener and get app hash
-  const initializeSMSListener = async () => {
-    try {
-      if (Platform.OS === "android") {
-        // Get app hash for SMS verification
-        const hashCodes = await getHash();
-        setAppHash(hashCodes);
-        console.log("App Hash Codes:", hashCodes);
-
-        // You should display this hash to your SMS provider/backend
-        if (hashCodes && hashCodes.length > 0) {
-          console.log("Add this hash to your SMS format:", hashCodes[0]);
-        }
-      }
-    } catch (error) {
-      console.error("Error initializing SMS listener:", error);
-    }
-  };
-
-  // Start SMS listener on mount (since this is always OTP mode)
+  // -------------------- AUTO VERIFY WHEN ALL DIGITS ENTERED --------------------
   useEffect(() => {
-    if (Platform.OS === "android") {
-      try {
-        console.log("Starting SMS listener for OTP screen");
-        // Start the listener using the hook's method
-        if (startListener) {
-          startListener();
-        }
-      } catch (error) {
-        console.error("Error starting SMS listener:", error);
-      }
+    const otpValue = otp.join("");
+    if (otpValue.length === 6 && !verifying && !waitingForOtp) {
+      console.log("🔍 Auto-verifying:", otpValue);
+      handleVerifyOtp();
+    }
+  }, [otp]);
+
+  // -------------------- OTP HANDLERS --------------------
+  const handleOtpChange = (val, idx) => {
+    // If user starts typing manually, stop waiting for auto OTP
+    if (val && waitingForOtp) {
+      setWaitingForOtp(false);
+      setShowFullScreenLoader(false); // 🔹 Hide loader when user starts typing
     }
 
-    // Cleanup on unmount
-    return () => {
-      try {
-        if (stopListener) {
-          stopListener();
-        }
-      } catch (error) {
-        console.log("Error in cleanup:", error);
-      }
-    };
-  }, [startListener, stopListener]);
-
-  const handleOtpChange = (val, idx) => {
     const updated = [...otp];
     updated[idx] = val;
     setOtp(updated);
-    
+
     if (val && idx < otp.length - 1) {
       inputRefs.current[idx + 1]?.focus();
     } else if (!val && idx > 0) {
@@ -219,138 +189,134 @@ function OtpPage({ navigation, route }) {
     }
   };
 
+  const clearOtp = () => {
+    setOtp(["", "", "", "", "", ""]);
+    setAutoCompleteOtp("");
+    inputRefs.current[0]?.focus();
+  };
+
   const handleVerifyOtp = async () => {
     const otpValue = otp.join("");
     if (otpValue.length !== 6) {
-      return showToast("Please enter 6-digit OTP");
-    }
-
-    setVerifying(true);
-    const tempUserData = await AsyncStorage.getItem("tempUserData");
-    
-    if (!tempUserData) {
-      showToast("User data not found. Please try registering again.");
-      setVerifying(false);
+      showToast("Please enter 6-digit OTP");
       return;
     }
 
-    const { phone } = JSON.parse(tempUserData);
+    console.log("✅ Verifying OTP:", otpValue);
+    setVerifying(true);
+    setShowFullScreenLoader(true); // 🔹 Show loader when verification starts
 
-    const res = await userService.verifyOtp(phone, otpValue);
+    try {
+      const tempUserData = await AsyncStorage.getItem("tempUserData");
+      if (!tempUserData) {
+        showToast("User data not found. Please try again.");
+        setVerifying(false);
+        setShowFullScreenLoader(false); // 🔹 Hide loader on error
+        return;
+      }
 
-    if (res.success) {
-      showToast("OTP verified successfully!");
-      await AsyncStorage.removeItem("tempUserData");
-      navigation.navigate("LoginPage");
-    } else {
-      showToast(res.error || "OTP verification failed");
-      // Clear OTP on failure
-      setOtp(["", "", "", "", "", ""]);
-      setAutoCompleteOtp("");
+      const { phone } = JSON.parse(tempUserData);
+      const res = await userService.verifyOtp(phone, otpValue);
+
+      if (res.success) {
+        showToast("OTP verified successfully!");
+        await AsyncStorage.removeItem("tempUserData");
+        stopListener && stopListener();
+        setShowFullScreenLoader(false); // 🔹 Hide loader on success
+        navigation.navigate("MainLanding");
+      } else {
+        showToast(res.error || "OTP verification failed");
+        clearOtp();
+        setShowFullScreenLoader(false); // 🔹 Hide loader on failure
+      }
+    } catch (error) {
+      console.error("❌ OTP verification error:", error);
+      showToast("Verification failed. Please try again.");
+      setShowFullScreenLoader(false); // 🔹 Hide loader on error
+    } finally {
+      setVerifying(false);
     }
-    setVerifying(false);
   };
 
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;
 
-    const tempUserData = await AsyncStorage.getItem("tempUserData");
-    if (!tempUserData) {
-      return showToast("User data not found. Please try registering again.");
-    }
-
-    const { username, email, phone, password } = JSON.parse(tempUserData);
-
-    const res = await userService.registerUser({
-      username,
-      email,
-      contactNumber: phone,
-      password,
-    });
-
-    if (res.success) {
-      showToast("OTP resent successfully!");
-      setResendTimer(30);
-      // Clear OTP
-      setOtp(["", "", "", "", "", ""]);
-      setAutoCompleteOtp("");
-
-      // Restart SMS listener
-      try {
-        if (startListener) {
-          startListener();
-        }
-      } catch (error) {
-        console.log("Error restarting listener:", error);
+    try {
+      const tempUserData = await AsyncStorage.getItem("tempUserData");
+      if (!tempUserData) {
+        showToast("User data not found. Please register again.");
+        return;
       }
-    } else {
-      showToast(res.error || "Failed to resend OTP");
+
+      const { username, email, phone, password } = JSON.parse(tempUserData);
+      const res = await userService.registerUser({
+        username,
+        email,
+        contactNumber: phone,
+        password,
+      });
+
+      if (res.success) {
+        showToast("OTP resent successfully!");
+        setResendTimer(20);
+        clearOtp();
+        
+        // Restart waiting for auto OTP
+        if (Platform.OS === "android") {
+          setWaitingForOtp(true);
+          setShowFullScreenLoader(true); // 🔹 Show loader again when resending
+          startListener && startListener();
+        }
+      } else {
+        showToast(res.error || "Failed to resend OTP");
+      }
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      showToast("Failed to resend OTP. Try again.");
     }
   };
 
-  const navigateToLogin = () => {
-    navigation.navigate("LoginPage");
-  };
+  const dismissKeyboard = () => Keyboard.dismiss();
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
-
-  // Clear OTP function
-  const clearOtp = () => {
-    setOtp(["", "", "", "", "", ""]);
-    setAutoCompleteOtp("");
-    // Focus on first input
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
-  };
-
+  // -------------------- UI --------------------
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <ImageBackground 
-        source={require("../../assets/bg4.jpg")} 
+      <ImageBackground
+        source={require("../../assets/bg4.jpg")}
         style={styles.backgroundImage}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
         >
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
           >
             <View style={styles.container}>
               <View style={styles.logoContainer}>
-                <Image source={require("../../assets/logo2.png")} style={styles.logoImage} />
+                <Image
+                  source={require("../../assets/logo2.png")}
+                  style={styles.logoImage}
+                />
               </View>
 
               <View style={styles.card}>
                 <Text style={styles.title}>Verify OTP</Text>
                 <Text style={styles.subtitle}>
-                  Enter the 6-digit OTP sent to{"\n"}+91 {phoneNumber}
+                  Enter the 6-digit OTP sent to {"\n"}+91 {phoneNumber}
                 </Text>
 
-                {/* Debug Info (remove in production) */}
-                {__DEV__ && (
-                  <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.1)', marginBottom: 10 }}>
-                    <Text style={{ color: 'white', fontSize: 12 }}>
-                      Detected OTP: {autoCompleteOtp || "None"}
-                    </Text>
-                    <Text style={{ color: 'white', fontSize: 12 }}>
-                      OTP Array: {otp.join("") || "Empty"}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Manual OTP Input */}
+                {/* Manual OTP input */}
                 <View style={styles.otpContainer}>
                   {otp.map((digit, index) => (
                     <LinearGradient
                       key={index}
-                      colors={digit ? [COLORS.gradientcolor7, COLORS.gradientcolor8] : [COLORS.background, COLORS.background]}
+                      colors={
+                        digit
+                          ? [COLORS.gradientcolor7, COLORS.gradientcolor8]
+                          : [COLORS.background, COLORS.background]
+                      }
                       style={styles.otpInputWrapper}
                     >
                       <TextInput
@@ -362,53 +328,103 @@ function OtpPage({ navigation, route }) {
                         onChangeText={(val) => handleOtpChange(val, index)}
                         textAlign="center"
                         selectionColor={COLORS.primary}
+                        editable={!showFullScreenLoader} // 🔹 Disable input while loader is shown
                       />
                     </LinearGradient>
                   ))}
                 </View>
 
-                {/* Clear OTP Button */}
                 <TouchableOpacity
-                  style={{ alignSelf: 'center', marginVertical: 10 }}
+                  style={styles.clearOtpButton}
                   onPress={clearOtp}
+                  disabled={showFullScreenLoader} // 🔹 Disable while loader is shown
                 >
-                  <Text style={{ color: COLORS.primary, fontSize: 14 }}>Clear OTP</Text>
+                  <Text style={[
+                    styles.clearOtpText,
+                    showFullScreenLoader && styles.disabledText
+                  ]}>
+                    Clear OTP
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.primaryButton, verifying && styles.disabledButton]}
+                  style={[
+                    styles.primaryButton,
+                    showFullScreenLoader && styles.disabledButton,
+                  ]}
                   onPress={handleVerifyOtp}
-                  disabled={verifying}
+                  disabled={showFullScreenLoader}
                 >
                   <LinearGradient
-                    colors={verifying ? ["#555", "#444"] : [COLORS.gradientcolor7, COLORS.gradientcolor8]}
+                    colors={
+                      showFullScreenLoader
+                        ? ["#555", "#444"]
+                        : [COLORS.gradientcolor7, COLORS.gradientcolor8]
+                    }
                     style={styles.buttonGradient}
                   >
-                    {verifying ? (
-                      <ActivityIndicator color={COLORS.white} />
-                    ) : (
-                      <Text style={styles.primaryButtonText}>Verify OTP</Text>
-                    )}
+                    <Text style={styles.primaryButtonText}>Verify OTP</Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.resendContainer}
                   onPress={handleResendOtp}
-                  disabled={resendTimer > 0}
+                  disabled={resendTimer > 0 || showFullScreenLoader}
                 >
                   <Text style={styles.resendText}>Didn't receive OTP? </Text>
-                  <Text style={[styles.resendLink, resendTimer > 0 && styles.resendDisabled]}>
+                  <Text
+                    style={[
+                      styles.resendLink,
+                      (resendTimer > 0 || showFullScreenLoader) && styles.resendDisabled,
+                    ]}
+                  >
                     {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend"}
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={navigateToLogin} style={styles.linkContainer}>
-                  <Text style={styles.linkText}>Back to Login</Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("LoginPage")}
+                  style={styles.linkContainer}
+                  disabled={showFullScreenLoader}
+                >
+                  <Text style={[
+                    styles.linkText,
+                    showFullScreenLoader && styles.disabledText
+                  ]}>
+                    Back to Login
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
+
+          {/* 🔹 FULL SCREEN LOADER FOR BOTH WAITING AND VERIFYING */}
+          {showFullScreenLoader && (
+            <View style={styles.fullScreenLoader}>
+              <View style={styles.loaderBackground} />
+              <View style={styles.loaderContent}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>
+                  {waitingForOtp && !verifying 
+                    ? "Waiting for OTP..." 
+                    : "Verifying OTP..."
+                  }
+                </Text>
+                <Text style={styles.loadingSubtext}>
+                  {waitingForOtp && !verifying 
+                    ? "We're automatically detecting OTP from SMS..."
+                    : "Please wait while we verify your OTP"
+                  }
+                </Text>
+                {waitingForOtp && !verifying && (
+                  <Text style={styles.loadingTimer}>
+                    This will timeout in 15 seconds
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
         </KeyboardAvoidingView>
       </ImageBackground>
     </TouchableWithoutFeedback>

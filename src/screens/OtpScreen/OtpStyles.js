@@ -113,6 +113,32 @@ linkText: {
     shadowRadius: moderateScale(4),
     elevation: 3,
   },
+  waitingContainer: {
+  alignItems: "center",
+  marginVertical: 20,
+  padding: 15,
+  backgroundColor: COLORS.background + "80", // semi-transparent
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: COLORS.primary,
+},
+waitingText: {
+  color: COLORS.primary,
+  marginTop: 10,
+  fontSize: 16,
+  fontWeight: "bold",
+  textAlign: "center",
+},
+waitingSubtext: {
+  color: COLORS.textDark,
+  marginTop: 5,
+  fontSize: 12,
+  textAlign: "center",
+},
+disabledText: {
+  color: COLORS.textLight,
+  opacity: 0.5,
+},
   otpInput: {
     width: '100%',
     height: '100%',
@@ -174,6 +200,124 @@ linkText: {
   resendDisabled: {
     color: COLORS.textLight,
   },
+  // Add these styles to your existing OtpStyles.js
+
+fullScreenLoader: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 9999,
+},
+loaderBackground: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  backdropFilter: Platform.OS === 'web' ? 'blur(10px)' : undefined,
+  // For React Native, we use opacity instead of backdrop-filter
+},
+loaderContent: {
+  backgroundColor: COLORS.white,
+  padding: 30,
+  borderRadius: 20,
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 250,
+  minHeight: 200,
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+  elevation: 5,
+},
+loadingText: {
+  marginTop: 20,
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: COLORS.primary,
+  textAlign: 'center',
+},
+loadingSubtext: {
+  marginTop: 10,
+  fontSize: 14,
+  color: COLORS.gray,
+  textAlign: 'center',
+},
+// Add/Update these styles in your OtpStyles.js
+
+fullScreenLoader: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 9999,
+},
+loaderBackground: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  // For React Native, we use opacity instead of backdrop-filter
+},
+loaderContent: {
+  backgroundColor: COLORS.white,
+  padding: 30,
+  borderRadius: 20,
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 280,
+  minHeight: 220,
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 4,
+  },
+  shadowOpacity: 0.3,
+  shadowRadius: 5,
+  elevation: 8,
+  margin: 20,
+},
+loadingText: {
+  marginTop: 20,
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: COLORS.primary,
+  textAlign: 'center',
+},
+loadingSubtext: {
+  marginTop: 10,
+  fontSize: 14,
+  color: COLORS.gray,
+  textAlign: 'center',
+  lineHeight: 20,
+},
+loadingTimer: {
+  marginTop: 8,
+  fontSize: 12,
+  color: COLORS.secondary,
+  textAlign: 'center',
+  fontStyle: 'italic',
+},
+disabledText: {
+  opacity: 0.5,
+},
+disabledButton: {
+  opacity: 0.6,
+},
 });
 
 // Platform-specific adjustments

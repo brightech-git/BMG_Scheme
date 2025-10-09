@@ -17,6 +17,7 @@ import appTheme from "../../utils/Theme";
 import { BackHeader } from "../../components";
 import CustomPicker from "./CustomPicker";
 import CommonHeader from "../../components/CommonHeader/CommonHeader";
+import { API_BASE_URL_OLD } from "../../Config/API";
 
 const { COLORS, SIZES, FONTS } = appTheme;
 
@@ -28,6 +29,7 @@ const SchemeDetailsPage = ({
   setValidationErrors,
   isSubmitting,
   API_BASE_URL,
+  schemes, // Receive schemes from parent
 }) => {
   const scrollViewRef = useRef(null);
   const inputRefs = useRef({});
@@ -45,7 +47,6 @@ const SchemeDetailsPage = ({
     ...schemeData,
   });
 
-  const [schemes, setSchemes] = useState([]);
   const [amounts, setAmounts] = useState([]);
   const [transactionTypes, setTransactionTypes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -82,28 +83,9 @@ const SchemeDetailsPage = ({
   }, [activeInput]);
 
   useEffect(() => {
-    const fetchSchemes = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/v1/api/member/scheme`);
-        const data = await response.json();
-        const formattedSchemes = data.map((s) => ({
-          id: s.SchemeId,
-          name: s.schemeName,
-          description: s.SchemeSName,
-        }));
-        setSchemes(formattedSchemes);
-      } catch (error) {
-        console.error("Error fetching schemes:", error);
-      }
-    };
-
-    fetchSchemes();
-  }, [API_BASE_URL]);
-
-  useEffect(() => {
     const fetchTransactionTypes = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/v1/api/account/getTranType`);
+        const response = await fetch(`${API_BASE_URL_OLD}/account/getTranType`);
         if (!response.ok) throw new Error("Network response was not ok.");
         const data = await response.json();
         setTransactionTypes(data);
@@ -112,22 +94,24 @@ const SchemeDetailsPage = ({
       }
     };
     fetchTransactionTypes();
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL_OLD]);
 
+  // Set default scheme if none selected
   useEffect(() => {
-    if (schemes.length > 0 && formData.selectedSchemeId === null) {
-      setFormData(prev => ({ ...prev, selectedSchemeId: schemes[0].id }));
+    if (schemes && schemes.length > 0 && formData.selectedSchemeId === null) {
+      setFormData(prev => ({ ...prev, selectedSchemeId: schemes[0].SchemeId }));
     }
   }, [schemes, formData.selectedSchemeId]);
 
-  // Fetch amounts when scheme changes
+  // Fetch amounts when scheme changes (for BMG AMOUNT SCHEME)
   useEffect(() => {
     const fetchAmounts = async () => {
-      if (formData.selectedSchemeId && formData.selectedSchemeId !== 7) {
+      // Only fetch amounts for BMG AMOUNT SCHEME (SchemeId: 1)
+      if (formData.selectedSchemeId === 1) {
         setLoading(true);
         try {
           const response = await fetch(
-            `${API_BASE_URL}/v1/api/member/schemeid?schemeId=${formData.selectedSchemeId}`
+            `${API_BASE_URL_OLD}/member/schemeid?schemeId=${formData.selectedSchemeId}`
           );
           
           if (!response.ok) {
@@ -161,16 +145,17 @@ const SchemeDetailsPage = ({
     };
 
     fetchAmounts();
-  }, [formData.selectedSchemeId, API_BASE_URL]);
+  }, [formData.selectedSchemeId, API_BASE_URL_OLD]);
 
-  const fetchGoldRate = async () => {
+  // Fetch silver rate for BMG DIGI SILVER
+  const fetchSilverRate = async () => {
     setLoadingGoldRate(true);
     setGoldRateError(false);
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`${API_BASE_URL}/v1/api/account/todayrate`, {
+      const response = await fetch(`${API_BASE_URL_OLD}/account/todayrate`, {
         signal: controller.signal,
         headers: {
           Accept: "application/json",
@@ -180,27 +165,30 @@ const SchemeDetailsPage = ({
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch gold rate`);
+        throw new Error(`HTTP ${response.status}: Failed to fetch silver rate`);
       }
 
       const data = await response.json();
 
-      if (!data.Rate || isNaN(data.Rate)) {
-        throw new Error("Invalid gold rate received from server");
+      // Use silver rate if available, otherwise fallback to gold rate
+      const rate = data.SILVERRATE || data.GOLDRATE;
+      
+      if (!rate || isNaN(rate)) {
+        throw new Error("Invalid silver rate received from server");
       }
 
-      setGoldRate(data.Rate);
+      setGoldRate(rate);
     } catch (error) {
-      console.error("Error fetching gold rate:", error);
+      console.error("Error fetching silver rate:", error);
       setGoldRateError(true);
       setGoldRate(null);
 
       if (error.name !== "AbortError") {
         Alert.alert(
           "Error",
-          "Failed to fetch current gold rate. Please check your internet connection and try again.",
+          "Failed to fetch current silver rate. Please check your internet connection and try again.",
           [
-            { text: "Retry", onPress: fetchGoldRate },
+            { text: "Retry", onPress: fetchSilverRate },
             { text: "Cancel", style: "cancel" },
           ]
         );
@@ -211,13 +199,9 @@ const SchemeDetailsPage = ({
   };
 
   useEffect(() => {
-    if (
-      formData.selectedSchemeId === 7 &&
-      goldRate === null &&
-      !loadingGoldRate &&
-      !goldRateError
-    ) {
-      fetchGoldRate();
+    // Fetch silver rate for BMG DIGI SILVER (SchemeId: 2)
+    if (formData.selectedSchemeId === 2 && goldRate === null && !loadingGoldRate && !goldRateError) {
+      fetchSilverRate();
     }
   }, [formData.selectedSchemeId, goldRate, loadingGoldRate, goldRateError]);
 
@@ -246,7 +230,7 @@ const SchemeDetailsPage = ({
     }
   };
 
-  const handleDigiGoldAmountChange = (text) => {
+  const handleDigiSilverAmountChange = (text) => {
     const sanitizedText = text.replace(/[^0-9.]/g, "");
 
     const parts = sanitizedText.split(".");
@@ -260,25 +244,36 @@ const SchemeDetailsPage = ({
 
   const validateStep = () => {
     const errors = {};
-    if (!formData.selectedSchemeId) errors.scheme = "Please select a scheme";
+    
+    if (!formData.selectedSchemeId) {
+      errors.scheme = "Please select a scheme";
+    }
 
-    if (formData.selectedSchemeId === 7) {
+    // BMG DIGI SILVER validation
+    if (formData.selectedSchemeId === 2) {
       if (!formData.amount || isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
         errors.amount = "Please enter a valid amount greater than 0";
       } else if (parseFloat(formData.amount) < 1) {
         errors.amount = "Minimum payment amount is ₹1";
       }
       if (!goldRate) {
-        errors.goldRate = "Current gold rate is not available. Please retry fetching.";
+        errors.goldRate = "Current silver rate is not available. Please retry fetching.";
       }
       if (!formData.calculatedWeight || parseFloat(formData.calculatedWeight) <= 0) {
-        errors.calculatedWeight = "Calculated gold weight is invalid.";
+        errors.calculatedWeight = "Calculated silver weight is invalid.";
       }
-    } else {
-      if (!formData.amount) errors.amount = "Please select an amount";
+    } 
+    // BMG AMOUNT SCHEME validation
+    else if (formData.selectedSchemeId === 1) {
+      if (!formData.amount) {
+        errors.amount = "Please select an amount";
+      }
     }
 
-    if (!formData.accCode) errors.accCode = "Please select a payment mode";
+    if (!formData.accCode) {
+      errors.accCode = "Please select a payment mode";
+    }
+    
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -294,9 +289,11 @@ const SchemeDetailsPage = ({
     }
   };
 
-  const isDigiGold = formData.selectedSchemeId === 7;
-  const selectedScheme = schemes.find((s) => s.id === formData.selectedSchemeId);
-  const schemeName = selectedScheme ? selectedScheme.name : 'No Scheme Selected';
+  const isDigiSilver = formData.selectedSchemeId === 2;
+  const isAmountScheme = formData.selectedSchemeId === 1;
+  
+  const selectedScheme = schemes?.find((s) => s.SchemeId === formData.selectedSchemeId);
+  const schemeName = selectedScheme ? selectedScheme.schemeName : 'No Scheme Selected';
 
   return (
     <KeyboardAvoidingView
@@ -318,19 +315,36 @@ const SchemeDetailsPage = ({
           <CommonHeader title={"Scheme Details"} />
           <View style={[styles.card]}>
 
+            {/* Scheme Selection */}
             <View style={styles.inputContainer}>
               <Text style={[styles.label, FONTS.h6]}>
                 Scheme Selection <Text style={[styles.asterisk, { color: COLORS.danger }]}>*</Text>
               </Text>
-              <View style={[styles.schemeDisplay, { backgroundColor: COLORS.input, borderColor: COLORS.borderColor }]}>
-                <Text style={[styles.schemeText, FONTS.font]}>{schemeName}</Text>
-              </View>
+              <CustomPicker
+                selectedValue={formData.selectedSchemeId}
+                onValueChange={(itemValue) => {
+                  updateFormData('selectedSchemeId', itemValue);
+                  // Reset amount when scheme changes
+                  updateFormData('amount', '');
+                  updateFormData('calculatedWeight', '');
+                }}
+                items={[
+                  { label: 'Select a Scheme', value: null },
+                  ...(schemes?.map((scheme) => ({
+                    label: scheme.schemeName,
+                    value: scheme.SchemeId
+                  })) || [])
+                ]}
+                placeholder="Select Scheme"
+                enabled={!isSubmitting}
+              />
               {validationErrors.scheme && (
                 <Text style={[styles.errorText, FONTS.fontSm]}>{validationErrors.scheme}</Text>
               )}
             </View>
 
-            {isDigiGold ? (
+            {/* BMG DIGI SILVER - Manual Amount Input */}
+            {isDigiSilver && (
               <>
                 <View style={styles.inputContainer}>
                   <Text style={[styles.label, FONTS.h6]}>
@@ -345,8 +359,8 @@ const SchemeDetailsPage = ({
                     keyboardType="decimal-pad"
                     value={formData.amount}
                     editable={!isSubmitting}
-                    onChangeText={handleDigiGoldAmountChange}
-                    placeholder="Enter amount for DigiGold"
+                    onChangeText={handleDigiSilverAmountChange}
+                    placeholder="Enter amount for Digi Silver"
                     placeholderTextColor={COLORS.placeholder}
                     maxLength={10}
                     onFocus={() => setActiveInput('amount')}
@@ -358,7 +372,7 @@ const SchemeDetailsPage = ({
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={[styles.label, FONTS.h6]}>Current Gold Rate</Text>
+                  <Text style={[styles.label, FONTS.h6]}>Current Silver Rate</Text>
                   {loadingGoldRate ? (
                     <ActivityIndicator size="small" color={COLORS.primary} style={{ marginTop: SIZES.margin }} />
                   ) : goldRateError ? (
@@ -367,7 +381,7 @@ const SchemeDetailsPage = ({
                         styles.retryButton,
                         { backgroundColor: COLORS.primaryLight, borderColor: COLORS.danger }
                       ]}
-                      onPress={fetchGoldRate}
+                      onPress={fetchSilverRate}
                       disabled={isSubmitting}
                     >
                       <Text style={[styles.retryText, FONTS.fontSm, { color: COLORS.danger }]}>
@@ -382,7 +396,7 @@ const SchemeDetailsPage = ({
                       ]}
                     >
                       <Text style={[styles.staticValueText, FONTS.font]}>
-                        {`₹${goldRate} / gm (22K)`}
+                        {`₹${goldRate} / gm`}
                       </Text>
                     </View>
                   ) : (
@@ -401,7 +415,7 @@ const SchemeDetailsPage = ({
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={[styles.label, FONTS.h6]}>Calculated Gold Weight (grams)</Text>
+                  <Text style={[styles.label, FONTS.h6]}>Calculated Silver Weight (grams)</Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -419,12 +433,15 @@ const SchemeDetailsPage = ({
                   )}
                   {formData.amount && formData.calculatedWeight && parseFloat(formData.calculatedWeight) > 0 && (
                     <Text style={[styles.hintText, FONTS.fontXs]}>
-                      You will purchase {formData.calculatedWeight}g of 22K gold.
+                      You will purchase {formData.calculatedWeight}g of silver.
                     </Text>
                   )}
                 </View>
               </>
-            ) : (
+            )}
+
+            {/* BMG AMOUNT SCHEME - Predefined Amounts */}
+            {isAmountScheme && (
               <>
                 <View style={styles.inputContainer}>
                   <Text style={[styles.label, FONTS.h6]}>
@@ -465,6 +482,7 @@ const SchemeDetailsPage = ({
               </>
             )}
 
+            {/* Payment Mode (Common for both schemes) */}
             <View style={styles.inputContainer}>
               <Text style={[styles.label, FONTS.h6]}>
                 Payment Mode <Text style={[styles.asterisk, { color: COLORS.danger }]}>*</Text>
@@ -490,6 +508,7 @@ const SchemeDetailsPage = ({
               )}
             </View>
 
+            {/* Buttons */}
             <View style={[styles.buttonRow, { gap: SIZES.margin }]}>
               <TouchableOpacity
                 style={[
@@ -542,7 +561,7 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     width: '100%',
-    height: 900,
+    height: '100%',
   },
   scrollContent: {
     flexGrow: 1,
@@ -587,19 +606,6 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
     fontSize: SIZES.fontLg,
     fontWeight: '700',
-  },
-  schemeDisplay: {
-    height: 56,
-    backgroundColor: COLORS.input,
-    borderRadius: SIZES.radius,
-    justifyContent: 'center',
-    paddingHorizontal: SIZES.padding,
-    borderWidth: 1.5,
-    borderColor: COLORS.borderColor,
-  },
-  schemeText: {
-    ...FONTS.font,
-    color: COLORS.text,
   },
   disabledInput: {
     backgroundColor: COLORS.darkInput,
