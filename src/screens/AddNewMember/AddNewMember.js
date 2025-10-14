@@ -8,10 +8,11 @@ import { API_BASE_URL_OLD } from "../../Config/API";
 
 const { COLORS } = appTheme;
 
-// Schemes array - Only BMG AMOUNT SCHEME and BMG DIGI SILVER
+// All three schemes
 const schemes = [
   { SchemeId: 1, schemeName: "BMG AMOUNT SCHEME", SchemeSName: "BAS" },
   { SchemeId: 2, schemeName: "BMG DIGI SILVER", SchemeSName: "BDS" },
+  { SchemeId: 3, schemeName: "BMG FIXED DEPOSIT", SchemeSName: "BFD" },
 ];
 
 const AddNewMember = () => {
@@ -40,20 +41,70 @@ const AddNewMember = () => {
   });
 
   const [schemeData, setSchemeData] = useState({
-    selectedSchemeId: null,
+    selectedSchemeId: schemeId ? Number(schemeId) : null,
     selectedGroupCodeObj: null,
     selectedCurrentRegNoObj: null,
     amount: "",
     accCode: "",
     modePay: "C",
+    calculatedWeight: "",
   });
+
+  const [schemeOptions, setSchemeOptions] = useState([]);
+  const [isFetchingSchemeOptions, setIsFetchingSchemeOptions] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Get scheme name
+  const getSchemeName = (id) => {
+    if (!id) return "No Scheme Selected";
+    const numericId = Number(id);
+    const scheme = schemes.find((s) => s.SchemeId === numericId);
+    return scheme ? scheme.schemeName : "Unknown Scheme";
+  };
+
+  // Fetch GROUPCODE and REGNO for selected scheme
+  const fetchSchemeOptions = async (schemeId) => {
+    if (!schemeId) return;
+
+    setIsFetchingSchemeOptions(true);
+    try {
+      const response = await fetch(`${API_BASE_URL_OLD}/member/schemeid?schemeId=${schemeId}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+
+      // Normalize data
+      const normalizedData = data.map((item) => ({
+        groupCode: item.GROUPCODE,
+        regNo: item.CURRENTREGNO || item.REGNO || generateRandomRegNo(),
+        amount: item.AMOUNT || "",
+      }));
+
+      setSchemeOptions(normalizedData);
+
+      // Preselect first option
+      if (normalizedData.length > 0) {
+        setSchemeData((prev) => ({
+          ...prev,
+          selectedGroupCodeObj: normalizedData[0].groupCode,
+          selectedCurrentRegNoObj: normalizedData[0].regNo,
+          amount: normalizedData[0].amount?.toString() || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching scheme options:", error);
+      Alert.alert("Error", "Failed to fetch scheme details. Please try again.");
+    } finally {
+      setIsFetchingSchemeOptions(false);
+    }
+  };
+
   useEffect(() => {
     if (schemeId) {
-      setSchemeData(prev => ({ ...prev, selectedSchemeId: schemeId }));
+      const numericSchemeId = Number(schemeId);
+      setSchemeData((prev) => ({ ...prev, selectedSchemeId: numericSchemeId }));
+      fetchSchemeOptions(numericSchemeId);
     }
   }, [schemeId]);
 
@@ -67,54 +118,69 @@ const AddNewMember = () => {
   };
 
   const handleNextStep = (memberFormData) => {
+    const errors = {};
+    if (!memberFormData.name?.trim()) errors.name = "Name is required";
+    if (!memberFormData.mobile?.trim()) errors.mobile = "Mobile number is required";
+    else if (memberFormData.mobile.length !== 10) errors.mobile = "Mobile number must be 10 digits";
+    if (!memberFormData.aadharNumber?.trim()) errors.aadharNumber = "Aadhaar number is required";
+    else if (memberFormData.aadharNumber.length !== 12) errors.aadharNumber = "Aadhaar number must be 12 digits";
+    if (!memberFormData.panNumber?.trim()) errors.panNumber = "PAN number is required";
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      Alert.alert("Validation Error", "Please fill all required fields correctly.");
+      return;
+    }
+
     setMemberData(memberFormData);
     setCurrentStep(2);
   };
 
-  // Check if member already exists
-  const checkDuplicateMember = async () => {
-    try {
-      const query = `mobile=${memberData.mobile}&aadhaar=${memberData.aadharNumber}&pan=${memberData.panNumber}`;
-      const response = await fetch(`${API_BASE_URL_OLD}/member/check?${query}`);
-      if (!response.ok) return false;
+const handleSubmit = async (schemeFormData) => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
 
-      const data = await response.json();
-      if (data.exists) {
-        Alert.alert("Duplicate Member", data.message || "Member already exists.");
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.log("Error checking duplicate member:", error);
-      return false; // Allow submit if check fails
-    }
-  };
+  const numericSchemeId = Number(schemeFormData.selectedSchemeId);
+  if (!numericSchemeId || isNaN(numericSchemeId)) {
+    Alert.alert("Error", "Please select a valid scheme.");
+    setIsSubmitting(false);
+    return;
+  }
+  if (!schemeFormData.amount || parseFloat(schemeFormData.amount) <= 0) {
+    Alert.alert("Error", "Please enter a valid amount.");
+    setIsSubmitting(false);
+    return;
+  }
+  if (!schemeFormData.accCode) {
+    Alert.alert("Error", "Please select a payment mode.");
+    setIsSubmitting(false);
+    return;
+  }
 
-  // Generate random registration number
-  const generateRandomRegNo = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
+  try {
+    // Fetch GROUPCODE and REGNO from API dynamically
+    const response = await fetch(`${API_BASE_URL_OLD}/member/schemeid?schemeId=${numericSchemeId}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const apiData = await response.json();
 
-  const handleSubmit = async (schemeFormData) => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    setSchemeData(schemeFormData);
+    if (!apiData || apiData.length === 0) throw new Error("No scheme data returned from API.");
 
-    // Basic validation
-    if (!memberData.mobile || !memberData.aadharNumber || !memberData.panNumber) {
-      Alert.alert("Error", "Mobile, Aadhaar, and PAN are required.");
-      setIsSubmitting(false);
-      return;
-    }
+    let selectedRecord;
 
-    // Check for duplicate
-    const isDuplicate = await checkDuplicateMember();
-    if (isDuplicate) {
-      setIsSubmitting(false);
-      return;
+    // Try to match by amount first
+    if (schemeFormData.amount) {
+      selectedRecord = apiData.find(
+        (item) => parseFloat(item.AMOUNT || 0) === parseFloat(schemeFormData.amount)
+      );
     }
 
-    console.log("---- SUBMIT STARTED ----");
+    // If no matching amount found, just pick the first record (for schemes like BDS or BFD)
+    if (!selectedRecord) {
+      selectedRecord = apiData[0];
+    }
+
+    const groupCode = selectedRecord.GROUPCODE;
+    const regNo = selectedRecord.CURRENTREGNO || selectedRecord.REGNO || generateRandomRegNo();
 
     const newMember = {
       title: memberData.namePrefix,
@@ -140,85 +206,52 @@ const AddNewMember = () => {
       appVer: "19.12.10.1",
     };
 
-    const selectedScheme = schemes.find(s => s.SchemeId === schemeFormData.selectedSchemeId);
-    
-    if (!selectedScheme) {
-      Alert.alert("Error", "Please select a valid scheme.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Common createSchemeSummary for both schemes
     const createSchemeSummary = {
-      schemeId: schemeFormData.selectedSchemeId,
-      groupCode: selectedScheme.SchemeSName,
-      regNo: generateRandomRegNo(),
+      schemeId: numericSchemeId,
+      groupCode,
+      regNo,
       joinDate: new Date().toISOString().slice(0, 19).replace("T", " "),
       upDateTime2: new Date().toISOString().slice(0, 19).replace("T", " "),
       openingDate: new Date().toISOString().slice(0, 19).replace("T", " "),
       userId2: "9999",
       amount: parseFloat(schemeFormData.amount || "0"),
+      ...(numericSchemeId === 2 && schemeFormData.calculatedWeight && {
+        calculatedWeight: parseFloat(schemeFormData.calculatedWeight),
+      }),
     };
 
-    // Scheme collect insert data
     const schemeCollectInsert = {
       amount: parseFloat(schemeFormData.amount || "0"),
       modePay: schemeFormData.modePay,
       accCode: schemeFormData.accCode,
     };
 
-    const requestBody = {
-      newMember,
-      createSchemeSummary,
-      schemeCollectInsert,
-    };
+    const requestBody = { newMember, createSchemeSummary, schemeCollectInsert };
 
-    console.log("Final Request Body:", JSON.stringify(requestBody, null, 2));
-    console.log("Selected Scheme:", selectedScheme.schemeName);
+    const submitResponse = await fetch(`${API_BASE_URL_OLD}/member/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(requestBody),
+    });
 
-    try {
-      const response = await fetch(`${API_BASE_URL_OLD}/member/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
+    if (!submitResponse.ok) throw new Error(`HTTP ${submitResponse.status}`);
 
-      console.log("Response Status:", response.status);
+    Alert.alert("Success", `Member added successfully to ${getSchemeName(numericSchemeId)}!`, [
+      { text: "OK", onPress: () => navigation.navigate("MainLanding") },
+    ]);
 
-      if (!response.ok) {
-        let errorData = {};
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          console.log("Error parsing response JSON:", e);
-        }
-        throw new Error(
-          "Error creating member: " + (errorData.message || response.statusText)
-        );
-      }
+    resetFormFields();
+  } catch (error) {
+    console.error("Error during member creation:", error);
+    Alert.alert("Submission Error", error.message || "Failed to create member. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-      const responseData = await response.text();
-      console.log("Success Response Data:", responseData);
 
-      Alert.alert(
-        "Success", 
-        `Member added successfully to ${selectedScheme.schemeName}!`, 
-        [
-          { 
-            text: "OK", 
-            onPress: () => navigation.navigate("MainLanding") 
-          },
-        ]
-      );
-
-      resetFormFields();
-    } catch (error) {
-      console.error("Error during member creation:", error);
-      Alert.alert("Error", error.message || "Something went wrong.");
-    } finally {
-      console.log("---- SUBMIT ENDED ----");
-      setIsSubmitting(false);
-    }
+  const generateRandomRegNo = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const resetFormFields = () => {
@@ -242,15 +275,17 @@ const AddNewMember = () => {
     });
 
     setSchemeData({
-      selectedSchemeId: null,
+      selectedSchemeId: schemeId ? Number(schemeId) : null,
       selectedGroupCodeObj: null,
       selectedCurrentRegNoObj: null,
       amount: "",
       accCode: "",
       modePay: "C",
+      calculatedWeight: "",
     });
 
     setValidationErrors({});
+    setSchemeOptions([]);
   };
 
   const renderStep = () => {
@@ -275,7 +310,11 @@ const AddNewMember = () => {
             setValidationErrors={setValidationErrors}
             isSubmitting={isSubmitting}
             API_BASE_URL={API_BASE_URL_OLD}
-            schemes={schemes} // Pass schemes to SchemeDetailsPage
+            schemes={schemes}
+            selectedSchemeId={schemeData.selectedSchemeId}
+            schemeName={getSchemeName(schemeData.selectedSchemeId)}
+            schemeOptions={schemeOptions}
+            isFetchingSchemeOptions={isFetchingSchemeOptions}
           />
         );
       default:

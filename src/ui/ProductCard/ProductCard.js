@@ -23,24 +23,41 @@ function ProductCard({ productData, navigation }) {
     );
   }
 
-  const { pname, regno, groupcode, maturityDate } = item;
-  const accountDetails = item.accountDetails;
-  const { schemeSummary } = accountDetails || {};
-  const isActive = item.status === 'Active';
+  const { pname, regNo, groupCode, maturityDate, schemeSummary, personalInfo, status } = item;
+  const isActive = status === 'Active';
 
-  // Determine scheme type based on schemeSName or fallback to groupcode
+  // Determine scheme type and whether to show weight or amount
   const schemeSName = schemeSummary?.schemeSName;
-  const isBMGAmountScheme = schemeSName === 'BAS' || groupcode === 'BMB';
-  const isBMGDigiSilver = schemeSName === 'BDS' || groupcode === 'BDS';
+  const isWeightLedger = schemeSummary?.weightLedger === 'Y';
+  
+  // Scheme type checks
+  const isBMGAmountScheme = schemeSName === 'BAS';
+  const isBMGDigiSilver = schemeSName === 'BDS';
+  const isBMGFixedDeposit = schemeSName === 'BFD';
 
-  // For BMG Amount Scheme (BAS): Show installments
-  // For BMG Digi Silver (BDS): Show amount as silver value/weight
-  const statValue1 = isBMGAmountScheme
-    ? `${schemeSummary?.schemaSummaryTransBalance?.insPaid || 0}/${schemeSummary?.instalment || 0}`
-    : `₹${parseFloat(schemeSummary?.amount || accountDetails?.amount || 0).toLocaleString('en-IN')}`;
-  const statLabel1 = isBMGAmountScheme ? 'Installments' : 'Silver Value';
+  // Calculate installment values
+  const paidInstallments = parseInt(schemeSummary?.schemaSummaryTransBalance?.insPaid) || 0;
+  const totalInstallments = parseInt(schemeSummary?.instalment) || 0;
+  const isInstallmentCompleted = paidInstallments >= totalInstallments;
 
-  const totalAmount = `₹${parseFloat(schemeSummary?.amount || accountDetails?.amount || 0).toLocaleString('en-IN')}`;
+  // Determine what to display based on weightLedger flag
+  let statValue1, statLabel1;
+  
+  if (isWeightLedger) {
+    // Show weight for silver schemes
+    statValue1 = `${schemeSummary?.totalWeight || 0}g`;
+    statLabel1 = 'Total Silver';
+  } else if (isBMGAmountScheme) {
+    // Show installments for amount schemes
+    statValue1 = `${paidInstallments}/${totalInstallments}`;
+    statLabel1 = 'Installments';
+  } else {
+    // Show amount received for other schemes
+    statValue1 = `₹${parseFloat(schemeSummary?.schemaSummaryTransBalance?.amtrecd || 0).toLocaleString('en-IN')}`;
+    statLabel1 = 'Amount Saved';
+  }
+
+  const totalAmount = `₹${parseFloat(schemeSummary?.schemaSummaryTransBalance?.amtrecd || 0).toLocaleString('en-IN')}`;
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -56,19 +73,42 @@ function ProductCard({ productData, navigation }) {
     navigation.navigate('ProductDescription', {
       productData: item,
       status: item.status,
-      accountDetails,
+      accountDetails: {
+        schemeSummary: item.schemeSummary,
+        personalInfo: item.personalInfo
+      },
     });
   };
 
   const handlePayNow = () => {
     const isDigiSilverPlan = isBMGDigiSilver;
+
+    console.log('Navigating to Buy with data:', {
+      productData: item,
+      status: item.status,
+      accountDetails: {
+        schemeSummary: item.schemeSummary,
+        personalInfo: item.personalInfo
+      },
+      isDigiSilverPlan,
+    });
+
     navigation.navigate('Buy', {
       productData: item,
       status: item.status,
-      accountDetails,
+      accountDetails: {
+        schemeSummary: item.schemeSummary,
+        personalInfo: item.personalInfo
+      },
       isDigiSilverPlan,
     });
   };
+
+  // Determine if Pay Now button should be shown
+  // Hide Pay Now for: inactive cards, fixed deposits, or completed installments
+  const shouldShowPayNow = isActive && 
+                          !isBMGFixedDeposit && 
+                          !(isBMGAmountScheme && isInstallmentCompleted);
 
   return (
     <TouchableOpacity
@@ -86,24 +126,28 @@ function ProductCard({ productData, navigation }) {
         <View style={styles.headerSection}>
           <View style={styles.headerLeft}>
             <View style={styles.iconBadge}>
-              <MaterialIcons name="account-balance" size={18} color={COLORS.primary} />
+              <MaterialIcons 
+                name="account-balance" 
+                size={18} 
+                color={isActive ? COLORS.primary : COLORS.gray} 
+              />
             </View>
             <View style={styles.headerInfo}>
               <TextDefault style={styles.schemeCode}>
-                {groupcode} - {regno}
+                {groupCode} - {regNo}
               </TextDefault>
-              {/* <TextDefault style={styles.schemeName} numberOfLines={1}>
-                {pname} {isBMGDigiSilver ? '(BMG Digi Silver)' : isBMGAmountScheme ? '(BMG Amount Scheme)' : ''}
-              </TextDefault> */}
+              <TextDefault style={styles.schemeName} numberOfLines={1}>
+                {schemeSummary?.schemeName || pname}
+              </TextDefault>
             </View>
           </View>
           
-          {item.status && (
+          {status && (
             <View style={[
               styles.statusBadge,
               { backgroundColor: isActive ? COLORS.success : COLORS.danger }
             ]}>
-              <TextDefault style={styles.statusText}>{item.status}</TextDefault>
+              <TextDefault style={styles.statusText}>{status}</TextDefault>
             </View>
           )}
         </View>
@@ -112,7 +156,7 @@ function ProductCard({ productData, navigation }) {
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
             <MaterialIcons 
-              name={isBMGAmountScheme ? "event-note" : "scale"} 
+              name={isWeightLedger ? "scale" : "event-note"} 
               size={20} 
               color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} 
             />
@@ -127,8 +171,14 @@ function ProductCard({ productData, navigation }) {
           <View style={styles.statDivider} />
 
           <View style={styles.statBox}>
-            <MaterialIcons name="payments" size={20} color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} />
-            <TextDefault style={[styles.statLabel, { color: isActive ? 'rgba(255,255,255,0.9)' : '#7f8c8d' }]}>Total Amount</TextDefault>
+            <MaterialIcons 
+              name="payments" 
+              size={20} 
+              color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} 
+            />
+            <TextDefault style={[styles.statLabel, { color: isActive ? 'rgba(255,255,255,0.9)' : '#7f8c8d' }]}>
+              {isWeightLedger ? 'Silver Value' : 'Total Amount'}
+            </TextDefault>
             <TextDefault style={[styles.statValue, { color: isActive ? COLORS.white : '#7f8c8d' }]}>
               {totalAmount}
             </TextDefault>
@@ -137,9 +187,18 @@ function ProductCard({ productData, navigation }) {
           <View style={styles.statDivider} />
 
           <View style={styles.statBox}>
-            <MaterialIcons name="event" size={20} color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} />
-            <TextDefault style={[styles.statLabel, { color: isActive ? 'rgba(255,255,255,0.9)' : '#7f8c8d' }]}>Maturity</TextDefault>
-            <TextDefault style={[styles.statValue, { color: isActive ? COLORS.white : '#7f8c8d' }]} numberOfLines={1}>
+            <MaterialIcons 
+              name="event" 
+              size={20} 
+              color={isActive ? "rgba(255,255,255,0.9)" : "#7f8c8d"} 
+            />
+            <TextDefault style={[styles.statLabel, { color: isActive ? 'rgba(255,255,255,0.9)' : '#7f8c8d' }]}>
+              Maturity
+            </TextDefault>
+            <TextDefault 
+              style={[styles.statValue, { color: isActive ? COLORS.white : '#7f8c8d' }]} 
+              numberOfLines={1}
+            >
               {formatDate(maturityDate)}
             </TextDefault>
           </View>
@@ -148,15 +207,24 @@ function ProductCard({ productData, navigation }) {
         {/* Action Buttons */}
         <View style={styles.actionContainer}>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, !shouldShowPayNow && styles.fullWidthButton]}
             onPress={handleViewDetails}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="visibility" size={16} color={COLORS.primary} />
-            <TextDefault style={styles.actionButtonText}>View Details</TextDefault>
+            <MaterialIcons 
+              name="visibility" 
+              size={16} 
+              color={isActive ? COLORS.primary : COLORS.gray} 
+            />
+            <TextDefault style={[
+              styles.actionButtonText, 
+              { color: isActive ? COLORS.primary : COLORS.gray }
+            ]}>
+              View Details
+            </TextDefault>
           </TouchableOpacity>
 
-          {isActive && (
+          {shouldShowPayNow && (
             <TouchableOpacity
               style={[styles.actionButton, styles.payButton]}
               onPress={handlePayNow}
@@ -298,11 +366,14 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(10),
     gap: moderateScale(6),
   },
+  fullWidthButton: {
+    flex: 0,
+    width: '100%',
+  },
   payButton: {
     backgroundColor: COLORS.success,
   },
   actionButtonText: {
-    color: COLORS.primary,
     fontSize: moderateScale(12),
     fontWeight: '700',
     ...FONTS.body1,

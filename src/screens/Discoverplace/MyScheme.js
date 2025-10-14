@@ -16,7 +16,7 @@ import { TextDefault } from '../../components';
 import ProductCard from '../../ui/ProductCard/ProductCard';
 import ProductCardSkeleton from '../../components/SkeletonLoader/ProductCardSkeleton';
 import CommonHeader from '../../components/CommonHeader/CommonHeader';
-import { API_BASE_URL_OLD } from '../../Config/API';
+import { getPhoneDetails } from '../../services/SchemeDetailsService';
 import { COLORS } from '../../utils/Theme';
 
 function DiscoverPlace({ navigation }) {
@@ -36,16 +36,8 @@ function DiscoverPlace({ navigation }) {
 
       console.log('Fetching data for phone:', storedPhoneNumber);
       
-      // Step 1: Get accounts by phone
-      const phoneResponse = await fetch(
-        `${API_BASE_URL_OLD}/account/phonesearch?phoneNo=${storedPhoneNumber}`
-      );
-
-      if (!phoneResponse.ok) {
-        throw new Error(`Phone search HTTP error! status: ${phoneResponse.status}`);
-      }
-
-      const accounts = await phoneResponse.json();
+      // Use the service to get phone details
+      const accounts = await getPhoneDetails(storedPhoneNumber);
       console.log('Raw API response accounts:', accounts);
       console.log('Number of accounts found:', accounts.length);
 
@@ -56,61 +48,32 @@ function DiscoverPlace({ navigation }) {
         return;
       }
 
-      // Deduplicate accounts based on regno and groupcode
-      const uniqueAccounts = accounts.filter((account, index, self) =>
-        index === self.findIndex(a => 
-          a.regno === account.regno && a.groupcode === account.groupcode
-        )
-      );
+      // Process accounts and determine status
+      const processedProducts = accounts.map((item) => {
+        const currentDate = new Date();
+        const maturityDate = item.maturityDate ? new Date(item.maturityDate) : null;
+        const isActive = !maturityDate || currentDate < maturityDate;
+        const status = isActive ? 'Active' : 'Deactive';
 
-      console.log(`After deduplication: ${uniqueAccounts.length} unique accounts`);
-
-      // Step 2: Fetch account details & amount/weight for each account
-      const resolvedProducts = await Promise.all(
-        uniqueAccounts.map(async (item) => {
-          try {
-            const groupcodeLower = item.groupcode.toLowerCase();
-
-            // Fetch account details
-            const accountRes = await fetch(
-              `${API_BASE_URL_OLD}/account?regno=${item.regno}&groupcode=${groupcodeLower}`
-            );
-            if (!accountRes.ok) throw new Error(`Account details HTTP error`);
-
-            const accountDetails = await accountRes.json();
-
-            // Fetch amount/weight
-            const amountWeightRes = await fetch(
-              `${API_BASE_URL_OLD}/getAmountWeight?REGNO=${item.regno}&GROUPCODE=${item.groupcode}`
-            );
-            if (!amountWeightRes.ok) throw new Error(`Amount/Weight HTTP error`);
-
-            const amountWeightJson = await amountWeightRes.json();
-
-            // Determine status
-            const currentDate = new Date();
-            const maturityDate = item.maturitydate ? new Date(item.maturitydate) : null;
-            const isActive = !maturityDate || currentDate < maturityDate;
-            const status = isActive ? 'Active' : 'Deactive';
-
-            return {
-              ...item,
-              accountDetails,
-              amountWeight: amountWeightJson[0] || null,
-              status,
-            };
-          } catch (err) {
-            console.error('Error fetching account data:', err);
-            return null; // skip invalid
+        return {
+          ...item,
+          status,
+          // Map old property names for compatibility
+          regno: item.regNo,
+          groupcode: item.groupCode,
+          pname: item.pname || item.personalInfo?.pName,
+          maturitydate: item.maturityDate,
+          accountDetails: {
+            schemeSummary: item.schemeSummary,
+            personalInfo: item.personalInfo
           }
-        })
-      );
+        };
+      });
 
-      const validProducts = resolvedProducts.filter(Boolean);
-      console.log('Valid products after processing:', validProducts.length);
-      setProductData(validProducts);
+      console.log('Processed products:', processedProducts.length);
+      setProductData(processedProducts);
 
-      if (validProducts.length === 0) {
+      if (processedProducts.length === 0) {
         setError('No valid product data found');
       }
     } catch (err) {
@@ -164,7 +127,7 @@ function DiscoverPlace({ navigation }) {
       <FlatList
         data={productData}
         renderItem={renderProductCard}
-        keyExtractor={(item, index) => `${item.regno}-${item.groupcode}-${index}`}
+        keyExtractor={(item, index) => `${item.regNo}-${item.groupCode}-${index}`}
         contentContainerStyle={localStyles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={

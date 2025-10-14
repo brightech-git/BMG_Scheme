@@ -1,5 +1,5 @@
 // PaymentHistoryScreen.js - Main History Screen
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,24 +21,40 @@ import { verticalScale } from "../../utils";
 const PaymentHistoryScreen = ({ navigation, route }) => {
   const { accountDetails, schemeName, productdata } = route.params;
 
+  console.log("Payment History Screen Data:", {
+    accountDetails,
+    schemeName,
+    productdata
+  });
+
   const [sortOrder, setSortOrder] = useState("desc");
   const [selectedFilter, setSelectedFilter] = useState("all");
 
-  // Get payment history from accountDetails
-  const paymentHistory = accountDetails?.paymentHistoryList || [];
+  // Get payment history from productdata (new API structure)
+  const paymentHistory = productdata?.paymentHistoryList || accountDetails?.paymentHistoryList || [];
 
   // Format date and time
   const formatDateTime = useCallback((dateTimeString) => {
     if (!dateTimeString) return "N/A";
     try {
-      const date = new Date(dateTimeString);
+      // Handle both date formats: "2025-10-11 10:52:00.0" and ISO format
+      const dateString = dateTimeString.includes(' ') 
+        ? dateTimeString.replace(' ', 'T').replace(/\.\d+$/, '')
+        : dateTimeString;
+      
+      const date = new Date(dateString);
       if (isNaN(date.getTime())) return "Invalid Date";
+      
       return date.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
       });
     } catch (error) {
+      console.error("Date formatting error:", error);
       return "Invalid Date";
     }
   }, []);
@@ -59,18 +75,49 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
     }
   }, []);
 
-  // Calculate summary statistics
-  const totalAmountPaid = paymentHistory.reduce((total, payment) => {
-    return total + parseFloat(payment.amount || 0);
-  }, 0);
+  // Calculate summary statistics using useMemo for better performance
+  const summaryStats = useMemo(() => {
+    const totalAmountPaid = paymentHistory.reduce((total, payment) => {
+      return total + parseFloat(payment.amount || 0);
+    }, 0);
 
-  const lastPaymentDate =
-    paymentHistory.length > 0
+    const lastPaymentDate = paymentHistory.length > 0
       ? paymentHistory[paymentHistory.length - 1].updateTime
       : null;
 
-  const averagePaymentAmount =
-    paymentHistory.length > 0 ? totalAmountPaid / paymentHistory.length : 0;
+    const averagePaymentAmount = paymentHistory.length > 0 
+      ? totalAmountPaid / paymentHistory.length 
+      : 0;
+
+    // For silver schemes, calculate total silver weight
+    const totalSilverWeight = paymentHistory.reduce((total, payment) => {
+      return total + parseFloat(payment.weight || 0);
+    }, 0);
+
+    return {
+      totalAmountPaid,
+      lastPaymentDate,
+      averagePaymentAmount,
+      totalSilverWeight
+    };
+  }, [paymentHistory]);
+
+  // Determine scheme type for display
+  const schemeType = useMemo(() => {
+    const schemeData = productdata || accountDetails;
+    const schemeName = schemeData?.schemeSummary?.schemeName?.trim();
+    const schemeSName = schemeData?.schemeSummary?.schemeSName?.trim();
+    
+    if (schemeName === "BMG AMOUNT SCHEME" || schemeSName === "BAS") {
+      return "AMOUNT_SCHEME";
+    } else if (schemeName === "BMG DIGI SILVER" || schemeSName === "BDS") {
+      return "DIGI_SILVER";
+    } else if (schemeName === "BMG FIXED DEPOSIT" || schemeSName === "BFD") {
+      return "FIXED_DEPOSIT";
+    } else {
+      return "OTHER";
+    }
+  }, [productdata, accountDetails]);
 
   // Sort payment history
   const sortedHistory = [...paymentHistory].sort((a, b) => {
@@ -90,16 +137,15 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
   const handlePaymentPress = (item) => {
     navigation.navigate("PaymentDetailScreen", {
       payment: item,
-      accountDetails,
-      schemeName,
-      productdata,
+      accountDetails: productdata || accountDetails,
+      schemeName: schemeName || productdata?.schemeSummary?.schemeName,
+      productdata: productdata,
+      schemeType: schemeType
     });
 
-    console.log("Navigated Data's:", {
+    console.log("Navigated to Payment Details:", {
       payment: item,
-      accountDetails,
-      schemeName,
-      productdata,
+      schemeType: schemeType
     });
   };
 
@@ -109,8 +155,8 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
       const isLastItem = index === filteredHistory.length - 1;
       const status = item.status?.toLowerCase() || "paid";
       const isPaid = status === "paid";
-      console.log("ALL DATA'S ", accountDetails);
-      console.log("ALL DATA'S ", schemeName);
+      const isSilverScheme = schemeType === "DIGI_SILVER";
+      const hasSilverWeight = isSilverScheme && parseFloat(item.weight) > 0;
 
       return (
         <TouchableOpacity
@@ -137,7 +183,11 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
 
           <View style={styles.transactionContent}>
             <Text style={styles.transactionInstallment}>
-              Installment {item.installment}
+              {schemeType === "AMOUNT_SCHEME" 
+                ? `Installment ${item.installment}`
+                : schemeType === "DIGI_SILVER"
+                ? "Silver Purchase"
+                : "Payment"}
             </Text>
 
             <Text style={styles.transactionDate}>
@@ -151,7 +201,21 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
                   size={12}
                   color={COLORS.textLight}
                 />
-                <Text style={styles.receiptNo}>{item.receiptNo}</Text>
+                <Text style={styles.receiptNo}>Receipt: {item.receiptNo}</Text>
+              </View>
+            )}
+
+            {/* Show silver weight for DIGI_SILVER schemes */}
+            {hasSilverWeight && (
+              <View style={styles.silverWeightContainer}>
+                <MaterialIcons
+                  name="scale"
+                  size={12}
+                  color={COLORS.success}
+                />
+                <Text style={styles.silverWeightText}>
+                  {parseFloat(item.weight).toFixed(3)}g Silver
+                </Text>
               </View>
             )}
           </View>
@@ -169,13 +233,13 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
             </View>
 
             <Text style={styles.transactionAmount}>
-              ₹{parseFloat(item.amount).toLocaleString("en-IN")}
+              ₹{parseFloat(item.amount).toLocaleString('en-IN')}
             </Text>
           </View>
         </TouchableOpacity>
       );
     },
-    [formatDateTime, filteredHistory.length, accountDetails, schemeName]
+    [formatDateTime, filteredHistory.length, schemeType]
   );
 
   // Render filter chip
@@ -216,12 +280,33 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
     </TouchableOpacity>
   );
 
-  const paidCount = paymentHistory.filter(
-    (p) => (p.status?.toLowerCase() || "paid") === "paid"
-  ).length;
-  const pendingCount = paymentHistory.filter(
-    (p) => (p.status?.toLowerCase() || "paid") === "pending"
-  ).length;
+  // Calculate filter counts
+  const filterCounts = useMemo(() => {
+    const paidCount = paymentHistory.filter(
+      (p) => (p.status?.toLowerCase() || "paid") === "paid"
+    ).length;
+    const pendingCount = paymentHistory.filter(
+      (p) => (p.status?.toLowerCase() || "paid") === "pending"
+    ).length;
+
+    return { paidCount, pendingCount };
+  }, [paymentHistory]);
+
+  // Get scheme display name
+  const getSchemeDisplayName = () => {
+    const schemeData = productdata || accountDetails;
+    return schemeName || 
+           schemeData?.schemeSummary?.schemeName || 
+           "BMG Scheme";
+  };
+
+  // Get customer name
+  const getCustomerName = () => {
+    const schemeData = productdata || accountDetails;
+    return schemeData?.personalInfo?.pName || 
+           schemeData?.pname || 
+           "Customer";
+  };
 
   return (
     <ImageBackground
@@ -259,6 +344,9 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
                 size={22}
                 color={COLORS.white}
               />
+              {/* <Text style={styles.sortButtonText}>
+                {sortOrder === "desc" ? "Latest" : "Oldest"}
+              </Text> */}
             </TouchableOpacity>
           }
         />
@@ -274,16 +362,23 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
               <View style={styles.summaryHeader}>
                 <View style={styles.summaryIconWrapper}>
                   <MaterialIcons
-                    name="account-balance"
+                    name={
+                      schemeType === "DIGI_SILVER" ? "attach-money" : 
+                      schemeType === "AMOUNT_SCHEME" ? "schedule" :
+                      schemeType === "FIXED_DEPOSIT" ? "account-balance" : "stars"
+                    }
                     size={24}
                     color={COLORS.primary}
                   />
                 </View>
-                <Text style={styles.summaryTitle} numberOfLines={1}>
-                  {schemeName ||
-                    accountDetails?.schemeSummary?.schemeName?.trim() ||
-                    "DREAM GOLD PLAN"}
-                </Text>
+                <View style={styles.schemeInfo}>
+                  <Text style={styles.schemeName} numberOfLines={1}>
+                    {getCustomerName()}
+                  </Text>
+                  <Text style={styles.schemeType} numberOfLines={1}>
+                    {getSchemeDisplayName()} • {productdata?.groupCode || accountDetails?.groupCode}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.summaryStats}>
@@ -298,7 +393,7 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
                   <View style={styles.summaryStatContent}>
                     <Text style={styles.summaryStatLabel}>Total Paid</Text>
                     <Text style={styles.summaryStatValue}>
-                      ₹ {totalAmountPaid.toLocaleString("en-IN")}
+                      ₹ {summaryStats.totalAmountPaid.toLocaleString("en-IN")}
                     </Text>
                   </View>
                 </View>
@@ -316,7 +411,7 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
                   <View style={styles.summaryStatContent}>
                     <Text style={styles.summaryStatLabel}>Last Payment</Text>
                     <Text style={styles.summaryStatValue}>
-                      {formatDate(lastPaymentDate)}
+                      {formatDate(summaryStats.lastPaymentDate)}
                     </Text>
                   </View>
                 </View>
@@ -326,15 +421,20 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
                 <View style={styles.summaryStatItem}>
                   <View style={styles.statIconContainer}>
                     <MaterialIcons
-                      name="trending-up"
+                      name={schemeType === "DIGI_SILVER" ? "scale" : "trending-up"}
                       size={20}
                       color={COLORS.success}
                     />
                   </View>
                   <View style={styles.summaryStatContent}>
-                    <Text style={styles.summaryStatLabel}>Avg Payment</Text>
+                    <Text style={styles.summaryStatLabel}>
+                      {schemeType === "DIGI_SILVER" ? "Total Silver" : "Avg Payment"}
+                    </Text>
                     <Text style={styles.summaryStatValue}>
-                      ₹ {averagePaymentAmount.toFixed(0)}
+                      {schemeType === "DIGI_SILVER" 
+                        ? `${summaryStats.totalSilverWeight.toFixed(3)}g`
+                        : `₹ ${summaryStats.averagePaymentAmount.toFixed(0)}`
+                      }
                     </Text>
                   </View>
                 </View>
@@ -348,11 +448,11 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
                 value="all"
                 count={paymentHistory.length}
               />
-              <FilterChip label="Paid" value="paid" count={paidCount} />
+              <FilterChip label="Paid" value="paid" count={filterCounts.paidCount} />
               <FilterChip
                 label="Pending"
                 value="pending"
-                count={pendingCount}
+                count={filterCounts.pendingCount}
               />
             </View>
 
@@ -373,7 +473,7 @@ const PaymentHistoryScreen = ({ navigation, route }) => {
                   data={filteredHistory}
                   renderItem={renderPaymentHistory}
                   keyExtractor={(item, index) =>
-                    item.receiptNo || `${item.installment}-${index}`
+                    item.receiptNo || `payment-${item.installment}-${index}`
                   }
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={styles.listContainer}
@@ -419,9 +519,17 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   sortButtonWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: moderateScale(8),
     borderRadius: moderateScale(20),
     backgroundColor: COLORS.primary,
+    gap: moderateScale(4),
+  },
+  sortButtonText: {
+    color: COLORS.white,
+    fontSize: moderateScale(12),
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -458,11 +566,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  summaryTitle: {
+  schemeInfo: {
+    flex: 1,
+  },
+  schemeName: {
     ...FONTS.heading,
     color: COLORS.title,
-    flex: 1,
     fontSize: SIZES.h6,
+    marginBottom: moderateScale(2),
+  },
+  schemeType: {
+    ...FONTS.subheading,
+    color: COLORS.textLight,
+    fontSize: SIZES.fontSm,
   },
   summaryStats: {
     flexDirection: "row",
@@ -492,11 +608,14 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(4),
     fontSize: SIZES.h6 - 3,
     ...FONTS.body1,
+    textAlign: 'center',
   },
   summaryStatValue: {
     fontSize: SIZES.h6 - 3,
     ...FONTS.body1,
     color: COLORS.title,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   summaryDivider: {
     width: 1,
@@ -636,6 +755,7 @@ const styles = StyleSheet.create({
     color: COLORS.title,
     fontSize: moderateScale(15),
     marginBottom: moderateScale(6),
+    fontWeight: '600',
   },
   transactionDate: {
     ...FONTS.subheading,
@@ -652,6 +772,19 @@ const styles = StyleSheet.create({
   receiptNo: {
     ...FONTS.subheading,
     color: COLORS.textLight,
+    fontSize: moderateScale(12),
+  },
+  silverWeightContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(4),
+    marginTop: moderateScale(4),
+  },
+  silverWeightText: {
+    ...FONTS.subheading,
+    color: COLORS.success,
+    fontSize: moderateScale(12),
+    fontWeight: '600',
   },
   transactionRight: {
     alignItems: "flex-end",
@@ -668,6 +801,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     letterSpacing: 0.5,
     fontSize: SIZES.fontSm,
+    fontWeight: '700',
   },
   transactionAmount: {
     ...FONTS.h6,

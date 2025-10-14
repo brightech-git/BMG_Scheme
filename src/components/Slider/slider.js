@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -64,6 +64,7 @@ export default function EnhancedSlider() {
   const flatListRef = useRef(null);
   const intervalRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
+  const isScrollingRef = useRef(false); // Track manual scrolling
 
   const FALLBACK_BANNERS = [
     { id: 1, image_path: '../../assets/image/slider3.jpg', url: 'https://bmgjewellers.com/shop-left?itemName=EARRINGS' },
@@ -72,80 +73,102 @@ export default function EnhancedSlider() {
     { id: 4, image_path: '../../assets/image/slider1.jpg', url: 'https://bmgjewellers.com/shop-left?itemName=FESTIVAL' },
   ];
 
-  // Fetch banners
-useEffect(() => {
-  let isMounted = true; // prevent state updates if component unmounted
-
-  const fetchBanners = async () => {
-    try {
-      const response = await fetch('https://app.bmgjewellers.com/api/v1/App_banner/list');
-      const data = await response.json();
-      // console.log('Fetched banners:', data);
-      if (!isMounted) return;
-
-      const bannersWithUrls = data.map((banner, index) => {
-        const fallbackBanner = FALLBACK_BANNERS[index] || FALLBACK_BANNERS[0];
-        return { ...banner, url: fallbackBanner.url, image_path: banner.image_path };
-      });
-      setBanners(bannersWithUrls);
-    } catch (error) {
-      if (!isMounted) return;
-      setBanners(FALLBACK_BANNERS);
-    } finally {
-      if (!isMounted) return;
-      setLoading(false); // stop skeleton
-    }
-  };
-
-  fetchBanners();
-
-  return () => {
-    isMounted = false;
-  };
-}, []);
-
-
-  // Auto-scroll logic
+  // Fetch banners - FIXED: Proper cleanup
   useEffect(() => {
-    if (!banners.length) return;
+    let isMounted = true;
+
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch('https://app.bmgjewellers.com/api/v1/App_banner/list');
+        const data = await response.json();
+        
+        if (!isMounted) return;
+
+        const bannersWithUrls = data.map((banner, index) => {
+          const fallbackBanner = FALLBACK_BANNERS[index] || FALLBACK_BANNERS[0];
+          return { 
+            ...banner, 
+            url: fallbackBanner.url, 
+            image_path: banner.image_path 
+          };
+        });
+        setBanners(bannersWithUrls);
+      } catch (error) {
+        if (!isMounted) return;
+        setBanners(FALLBACK_BANNERS);
+      } finally {
+        if (!isMounted) return;
+        setLoading(false);
+      }
+    };
+
+    fetchBanners();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Auto-scroll logic - FIXED: Simplified dependencies
+  useEffect(() => {
+    if (!banners.length || !isAutoScrolling) return;
+
     startAutoScroll();
     return () => stopAutoScroll();
-  }, [banners, currentIndex, isAutoScrolling]);
+  }, [banners.length, isAutoScrolling]); // Removed currentIndex from dependencies
 
-  const startAutoScroll = () => {
+  const startAutoScroll = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    
     intervalRef.current = setInterval(() => {
-      if (isAutoScrolling && banners.length > 0) {
+      if (isAutoScrolling && banners.length > 0 && !isScrollingRef.current) {
         const nextIndex = currentIndex === banners.length - 1 ? 0 : currentIndex + 1;
         scrollToIndex(nextIndex);
       }
     }, 4000);
-  };
+  }, [banners.length, currentIndex, isAutoScrolling]);
 
-  const stopAutoScroll = () => {
+  const stopAutoScroll = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  };
+  }, []);
 
-  const scrollToIndex = (index) => {
-    if (flatListRef.current) {
+  const scrollToIndex = useCallback((index) => {
+    if (flatListRef.current && banners.length > 0) {
       flatListRef.current.scrollToIndex({ index, animated: true });
       setCurrentIndex(index);
     }
-  };
+  }, [banners.length]);
 
-  const onScrollEnd = (event) => {
+  const onScrollEnd = useCallback((event) => {
     const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-    if (newIndex !== currentIndex) setCurrentIndex(newIndex);
-  };
+    if (newIndex !== currentIndex) {
+      setCurrentIndex(newIndex);
+    }
+    isScrollingRef.current = false;
+  }, [currentIndex]);
+
+  const onScrollBeginDrag = useCallback(() => {
+    isScrollingRef.current = true;
+    setIsAutoScrolling(false);
+    stopAutoScroll();
+  }, [stopAutoScroll]);
+
+  const onScrollEndDrag = useCallback(() => {
+    // Restart auto-scroll after a delay when user stops dragging
+    setTimeout(() => {
+      setIsAutoScrolling(true);
+      isScrollingRef.current = false;
+    }, 3000);
+  }, []);
 
   const handleBannerPress = (url) => {
     Linking.openURL(url).catch(err => console.error('Failed to open URL:', err));
   };
 
-  const renderSliderItem = ({ item }) => {
+  const renderSliderItem = useCallback(({ item }) => {
     const imageUrl = `https://app.bmgjewellers.com${item.image_path}`;
     return (
       <TouchableOpacity
@@ -158,17 +181,18 @@ useEffect(() => {
             style={styles.sliderImage}
             source={{ uri: imageUrl }}
             resizeMode="cover"
+            onError={(error) => console.log('Image loading error:', error)}
           />
           <View style={styles.overlay} />
         </View>
       </TouchableOpacity>
     );
-  };
+  }, []);
 
-  const renderPaginationDots = () => (
+  const renderPaginationDots = useCallback(() => (
     <View style={styles.paginationContainer}>
       {banners.map((_, index) => (
-        <Animated.View
+        <View
           key={index}
           style={[
             styles.paginationDot,
@@ -177,7 +201,7 @@ useEffect(() => {
         />
       ))}
     </View>
-  );
+  ), [banners.length, currentIndex]);
 
   // Show skeleton loader if still loading
   if (loading) {
@@ -211,21 +235,16 @@ useEffect(() => {
           { useNativeDriver: true }
         )}
         onMomentumScrollEnd={onScrollEnd}
-        onScrollBeginDrag={() => {
-          setIsAutoScrolling(false);
-          stopAutoScroll();
-        }}
-        onScrollEndDrag={() => {
-          setTimeout(() => {
-            setIsAutoScrolling(true);
-            startAutoScroll();
-          }, 3000);
-        }}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onScrollEndDrag={onScrollEndDrag}
         getItemLayout={(data, index) => ({
           length: width,
           offset: width * index,
           index,
         })}
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+        windowSize={5}
       />
       {banners.length > 1 && renderPaginationDots()}
     </View>
@@ -234,7 +253,6 @@ useEffect(() => {
 
 const styles = StyleSheet.create({
   container: {
-    // backgroundColor: colors.background,
     marginVertical: 10,
     position: 'relative',
   },

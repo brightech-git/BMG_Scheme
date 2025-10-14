@@ -30,6 +30,8 @@ function Drawer() {
       <NavigationStack.Screen name='AboutPage' component={Screen.AboutPage}/>
       <NavigationStack.Screen name='PaymentDetailScreen' component={Screen.PaymentDetailScreen}/>
       <NavigationStack.Screen name='PaymentGateway' component={Screen.PaymentGateway}/>
+      <NavigationStack.Screen name='PaymentWebView' component={Screen.PaymentWebView}/>
+      <NavigationStack.Screen name='PaymentSuccess' component={Screen.PaymentSuccess}/>
       
       {/* Removed RegisterPage and LoginPage from here */}
     </NavigationStack.Navigator>

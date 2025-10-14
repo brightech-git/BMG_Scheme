@@ -79,7 +79,7 @@ function GoldPlanScreen({ navigation }) {
       >
         <SafeAreaView style={styles.safeArea}>
           {/* Reusable Header */}
-          <CommonHeader title="Your Gold Plans" />
+          <CommonHeader title="Scheme Plans" />
 
           {/* Content */}
           <ScrollView

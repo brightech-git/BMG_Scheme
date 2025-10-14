@@ -22,24 +22,10 @@ import ProductCardSkeleton from "../../components/SkeletonLoader/ProductCardSkel
 import GoldPlansSkeleton from "../../components/SkeletonLoader/GoldPlansSkeleton";
 import MainPageWithYouTube from "../Youtube/Youtube";
 import MainHeader from "../../components/MainHeader/MainHeader";
-import OtpModal from "../../components/VerifyPhone/VerifyPhone";
-import { API_BASE_URL_OLD } from "../../Config/API";
+import OtpModal from "../../components/VerifyPhone/VerifyPhone"; // ✅ your otp modal
+import { getPhoneDetails } from "../../services/SchemeDetailsService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-const API_ENDPOINTS = {
-  phoneSearch: (phoneNo) =>
-    `${API_BASE_URL_OLD}/account/phonesearch?phoneNo=${phoneNo}`,
-  account: (regno, groupcode) =>
-    `${API_BASE_URL_OLD}/account?regno=${encodeURIComponent(
-      regno
-    )}&groupcode=${encodeURIComponent(groupcode)}`,
-  amountWeight: (regno, groupcode) =>
-    `${API_BASE_URL_OLD}/getAmountWeight?REGNO=${encodeURIComponent(
-      regno
-    )}&GROUPCODE=${encodeURIComponent(groupcode)}`,
-  schemes: `${API_BASE_URL_OLD}/member/scheme`,
-};
 
 const showToast = (message) => {
   if (Platform.OS === "android") {
@@ -48,31 +34,6 @@ const showToast = (message) => {
     Alert.alert("", message);
   }
 };
-
-const useFetchWithError = () => {
-  const fetchData = useCallback(async (url, options = {}) => {
-    try {
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        ...options,
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error(`Error fetching ${url}:`, error);
-      throw error;
-    }
-  }, []);
-  return fetchData;
-};
-
-
 
 // ------------------- SWIPEABLE CARDS COMPONENT -------------------
 const SwipeableCards = React.memo(
@@ -112,7 +73,6 @@ const SwipeableCards = React.memo(
       );
     }
 
-    // FIXED: Check for empty data after loading is complete
     if (error || !data || data.length === 0) {
       return (
         <View style={styles.emptyStateContainer}>
@@ -140,8 +100,8 @@ const SwipeableCards = React.memo(
             </View>
           )}
           keyExtractor={(item, index) =>
-            item.regno && item.groupcode
-              ? `${item.regno}-${item.groupcode}-${index}`
+            item.regNo && item.groupCode
+              ? `${item.regNo}-${item.groupCode}-${index}`
               : item.schemeId
               ? `${item.schemeId}-${index}`
               : index.toString()
@@ -151,7 +111,6 @@ const SwipeableCards = React.memo(
           snapToAlignment="center"
         />
 
-        {/* Pagination Dots */}
         {data.length > 1 && (
           <View style={styles.paginationContainer}>
             {data.map((_, index) => (
@@ -192,133 +151,109 @@ const SectionHeader = React.memo(({ title, onViewAll }) => (
 // ------------------- MAIN LANDING COMPONENT -------------------
 function MainLanding() {
   const navigation = useNavigation();
-  const fetchData = useFetchWithError();
 
   const [schemes, setSchemes] = useState([]);
   const [productData, setProductData] = useState([]);
   const [productLoading, setProductLoading] = useState(true);
   const [schemesLoading, setSchemesLoading] = useState(true);
-  const [schemesError, setSchemesError] = useState(null); // NEW: Separate error state for schemes
+  const [schemesError, setSchemesError] = useState(null);
   const [productError, setProductError] = useState(null);
-
   const [showOtpModal, setShowOtpModal] = useState(false);
 
   // ------------------- FETCH SCHEMES -------------------
   const fetchSchemes = useCallback(async () => {
     try {
       setSchemesLoading(true);
-      setSchemesError(null); // Reset error state
-      const data = await fetchData(API_ENDPOINTS.schemes);
-      
-      // FIXED: Check if data is valid and has items
-      if (data && Array.isArray(data) && data.length > 0) {
-        setSchemes(
-          data.map((s) => ({
-            schemeId: s.SchemeId,
-            schemeName: s.schemeName,
-            description: s.SchemeSName,
-          }))
-        );
-      } else {
-        setSchemes([]);
-        setSchemesError("No Gold Plans available.");
-      }
+      const schemesData = [
+        { schemeId: "1", schemeName: "BMG AMOUNT SCHEME", description: "BAS" },
+        { schemeId: "2", schemeName: "BMG DIGI SILVER", description: "BDS" },
+        { schemeId: "3", schemeName: "BMG FIXED DEPOSIT", description: "BFD" },
+      ];
+      setSchemes(schemesData);
     } catch (error) {
       console.error("Error fetching schemes:", error);
       setSchemesError("Failed to fetch Gold Plans");
-      setSchemes([]);
-      showToast("Failed to fetch Gold Plans");
     } finally {
       setSchemesLoading(false);
     }
-  }, [fetchData]);
+  }, []);
 
   // ------------------- FETCH PRODUCT DATA -------------------
   const fetchProductData = useCallback(async () => {
     setProductLoading(true);
     setProductError(null);
     try {
-      const storedPhoneNumber = await AsyncStorage.getItem("userPhoneNumber");
-      if (!storedPhoneNumber) throw new Error("Phone number not found");
+      const storedPhone = await AsyncStorage.getItem("userPhoneNumber");
+      if (!storedPhone) {
+        console.log("❌ Phone not verified. Showing OTP modal.");
+        setShowOtpModal(true);
+        setProductLoading(false);
+        return;
+      }
 
-      const phoneData = await fetchData(API_ENDPOINTS.phoneSearch(storedPhoneNumber));
-      if (!phoneData || phoneData.length === 0) {
+      console.log("📱 Fetching products for phone:", storedPhone);
+      const accounts = await getPhoneDetails(storedPhone);
+      if (!accounts || accounts.length === 0) {
         setProductError("No Schemes available for this account");
         setProductData([]);
         return;
       }
 
-      const productPromises = phoneData.map(async (item) => {
-        const regno = item.regno;
-        const groupcode = item.groupcode;
-        if (!regno || !groupcode) return null;
+      const processed = accounts.map((item) => ({
+        ...item,
+        status: "Active",
+        regno: item.regNo,
+        groupcode: item.groupCode,
+        pname: item.personalInfo?.pName,
+      }));
 
-        try {
-          const [accountData, amountWeightData] = await Promise.all([
-            fetchData(API_ENDPOINTS.account(regno, groupcode)),
-            fetchData(API_ENDPOINTS.amountWeight(regno, groupcode)),
-          ]);
-
-          const maturityDate = item.maturityDate ? new Date(item.maturityDate) : null;
-          const isActive = maturityDate !== null;
-          const itemStatus = isActive ? "Active" : "Deactive";
-
-          const amountWeight = amountWeightData?.[0] ?? { Weight: 0, Amount: 0 };
-
-          return {
-            ...item,
-            amountWeight,
-            status: itemStatus,
-            accountDetails: accountData,
-          };
-        } catch (err) {
-          console.error(`Error fetching account/amountWeight for ${regno}-${groupcode}:`, err);
-          return null;
-        }
-      });
-
-      const resolvedData = await Promise.all(productPromises);
-      const validData = resolvedData.filter(Boolean);
-
-      setProductData(validData);
-      if (validData.length === 0) {
-        setProductError("No Schemes available for this account");
-      }
+      setProductData(processed);
     } catch (err) {
-      console.error("Error in fetchProductData:", err);
-      setProductError("No Schemes available for this account");
-      showToast("No Schemes available for this account");
+      console.error("Error fetching product data:", err);
+      setProductError("Failed to fetch schemes data");
     } finally {
       setProductLoading(false);
     }
-  }, [fetchData]);
+  }, []);
 
-  // ------------------- INITIAL FETCH -------------------
-  useEffect(() => {
-    fetchSchemes();
-  }, [fetchSchemes]);
-  
-
-  useFocusEffect(
-    useCallback(() => {
-      (async () => {
-        const storedPhone = await AsyncStorage.getItem("userPhoneNumber");
-        if (storedPhone && /^\d{10}$/.test(storedPhone)) {
-          fetchProductData();
-        } else {
-          setProductError("No Schemes available for this account");
-          setProductData([]);
-          setProductLoading(false);
-        }
-      })();
-    }, [fetchProductData])
-  );
-
+  // ------------------- OTP VERIFIED CALLBACK -------------------
   const handleOtpVerified = useCallback(() => {
+    setShowOtpModal(false);
+    showToast("Phone number verified");
     fetchProductData();
   }, [fetchProductData]);
 
-  // ------------------- HEADER CONTENT -------------------
+  // ------------------- INITIAL LOAD -------------------
+  useEffect(() => {
+    fetchSchemes();
+    (async () => {
+      const storedPhone = await AsyncStorage.getItem("userPhoneNumber");
+      if (storedPhone) {
+        console.log("✅ Verified phone found:", storedPhone);
+        fetchProductData();
+      } else {
+        console.log("🔒 No verified phone found, showing OTP modal...");
+        setShowOtpModal(true);
+      }
+    })();
+  }, [fetchSchemes, fetchProductData]);
+
+  const handlePayNow = useCallback(
+    (item) => {
+      navigation.navigate("Buy", {
+        productData: item,
+        paymentData: {
+          regNo: item.regNo,
+          groupCode: item.groupCode,
+          customerName: item.pname,
+          amount: item.amount,
+          schemeName: item.schemeSummary?.schemeName,
+        },
+      });
+    },
+    [navigation]
+  );
+
   const renderHeaderContent = useCallback(
     () => (
       <>
@@ -326,14 +261,9 @@ function MainLanding() {
         <Slider />
 
         <View style={styles.contentWrapper}>
-          <Text style={styles.contentText}>
-            Welcome to the Digital home of BMG Jewellers:
-          </Text>
+          <Text style={styles.contentText}>Welcome to BMG Jewellers</Text>
           <Text style={styles.contentText1}>
-            The ideal place to join a savings scheme and save up to buy your
-            dream jewels. BMG DIGIGOLD empowers you to save and buy jewels
-            conveniently in the palm of your hand. Start saving in gold from
-            today.
+            Join a savings scheme and save to buy your dream jewels!
           </Text>
         </View>
 
@@ -343,19 +273,18 @@ function MainLanding() {
             title="Your Schemes"
             onViewAll={() => navigation.navigate("MyScheme")}
           />
-
           <SwipeableCards
             data={productData}
             loading={productLoading}
             error={productError}
-            emptyMessage="No Schemes available for this account"
+            emptyMessage="No Schemes available"
             renderItem={(item) => (
               <ProductCard
                 productData={item}
                 loading={false}
                 status={item.status}
                 navigation={navigation}
-                accountDetails={item.accountDetails}
+                onPayNow={() => handlePayNow(item)}
               />
             )}
             renderSkeleton={(index) => <ProductCardSkeleton key={index} />}
@@ -364,10 +293,9 @@ function MainLanding() {
 
         {/* Gold Plans */}
         <View style={styles.contentWrapper}>
-          <Text style={styles.contentText}>Customized Gold Plans for You:</Text>
+          <Text style={styles.contentText}>Customized Gold Plans for You</Text>
           <Text style={styles.contentText1}>
-            Choose from a range of Gold Plans with unique benefits to suit your
-            needs and convenience.
+            Choose from a range of Our Scheme Plans with unique benefits.
           </Text>
         </View>
 
@@ -376,13 +304,10 @@ function MainLanding() {
             title="Gold Plans"
             onViewAll={() => navigation.navigate("GoldPlanScreen")}
           />
-
-          {/* FIXED: Use schemesError instead of null for error prop */}
           <SwipeableCards
             data={schemes}
             loading={schemesLoading}
             error={schemesError}
-            emptyMessage="No Gold Plans available."
             renderItem={(scheme) => (
               <GoldPlan
                 schemeId={scheme.schemeId}
@@ -396,7 +321,6 @@ function MainLanding() {
           />
         </View>
 
-        {/* YouTube Section */}
         <View style={styles.youtubeContainer}>
           <View style={styles.youtubeWrapper}>
             <TextDefault
@@ -411,13 +335,14 @@ function MainLanding() {
       </>
     ),
     [
-      navigation, 
-      productLoading, 
-      productError, 
-      productData, 
-      schemes, 
-      schemesLoading, 
-      schemesError // ADDED: schemesError dependency
+      navigation,
+      productData,
+      productLoading,
+      productError,
+      schemes,
+      schemesLoading,
+      schemesError,
+      handlePayNow,
     ]
   );
 
@@ -428,22 +353,26 @@ function MainLanding() {
         style={styles.mainBackground}
         imageStyle={styles.backgroundImageStyle}
       >
-        <FlatList
-          contentContainerStyle={{ paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={renderHeaderContent}
-          data={[]}
-          renderItem={null}
-        />
-        <BottomTab screen="HOME" />
+        <SafeAreaView style={styles.safeArea}>
+          <FlatList
+            contentContainerStyle={{ paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={renderHeaderContent}
+            data={[]}
+            renderItem={null}
+          />
 
-        <OtpModal
-          visible={showOtpModal}
-          onClose={() => setShowOtpModal(false)}
-          onVerified={handleOtpVerified}
-          showToast={showToast}
-        />
+          {/* ✅ OTP Modal */}
+          <OtpModal
+            visible={showOtpModal}
+            onClose={() => setShowOtpModal(false)}
+            onVerified={handleOtpVerified}
+            showToast={showToast}
+          />
+        </SafeAreaView>
       </ImageBackground>
+
+      <BottomTab screen="HOME" />
     </View>
   );
 }

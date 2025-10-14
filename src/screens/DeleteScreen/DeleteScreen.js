@@ -12,58 +12,66 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import appTheme from '../../utils/Theme';
 import CommonHeader from '../../components/CommonHeader/CommonHeader';
-
+import { API_BASE_URL } from '../../Config/API';
 const { COLORS, SIZES, FONTS } = appTheme;
 
-function DeleteAccount(props) {
+// Replace with your backend API base URL
+
+
+function DeleteAccount() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
 
-  const handleDeleteAccount = async () => {
-    Alert.alert(
-      'Confirm Account Deletion',
-      'Are you sure you want to delete your account? This will remove all your data from this device.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              // Get all keys from AsyncStorage
+const handleDeleteAccount = async () => {
+  Alert.alert(
+    'Confirm Account Deletion',
+    'Are you sure you want to delete your account? This will remove all your data from this device.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            // Get user ID from AsyncStorage
+            const userId = await AsyncStorage.getItem('userId');
+            if (!userId) throw new Error('User ID not found');
+
+            console.log(`Deleting account for user ID: ${userId}`);
+
+            const response = await fetch(`${API_BASE_URL}/user/delete/${userId}`, {
+              method: 'DELETE',
+            });
+
+            const result = await response.json();
+            console.log('API response:', result);
+
+            if (response.ok) {
+              // Clear all AsyncStorage data
               const allKeys = await AsyncStorage.getAllKeys();
-              
-              // Remove all data from AsyncStorage
               await AsyncStorage.multiRemove(allKeys);
-              
+
               Alert.alert(
                 'Account Deleted',
-                'Your account data has been removed from this device.',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => navigation.replace('LoginPage')
-                  }
-                ]
+                result.message || 'Your account has been deleted.',
+                [{ text: 'OK', onPress: () => navigation.replace('LoginPage') }]
               );
-            } catch (error) {
-              console.error('Error deleting account data:', error);
-              Alert.alert(
-                'Error',
-                'Failed to delete account data. Please try again.'
-              );
-            } finally {
-              setLoading(false);
+            } else {
+              Alert.alert('Error', result.message || 'Failed to delete account.');
             }
-          },
+          } catch (error) {
+            console.error('Error deleting account:', error);
+            Alert.alert('Error', 'Failed to delete account. Please try again.');
+          } finally {
+            setLoading(false);
+          }
         },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
+
 
   if (loading) {
     return (
@@ -136,93 +144,21 @@ function DeleteAccount(props) {
 }
 
 const styles = {
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    padding: SIZES.padding,
-    justifyContent: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    padding: SIZES.padding,
-  },
-  loadingText: {
-    ...FONTS.font,
-    color: COLORS.text,
-    marginTop: SIZES.margin,
-  },
-  warningContainer: {
-    alignItems: 'center',
-    padding: SIZES.padding,
-  },
-  warningTitle: {
-    ...FONTS.h4,
-    color: COLORS.danger,
-    textAlign: 'center',
-    fontWeight: '900',
-    marginBottom: SIZES.margin / 2,
-  },
-  warningText: {
-    ...FONTS.font,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    lineHeight: SIZES.font * 1.4,
-    marginBottom: SIZES.margin * 2,
-  },
-  instructionsContainer: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius,
-    padding: SIZES.padding,
-    marginBottom: SIZES.margin * 2,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.warning,
-  },
-  instructionsTitle: {
-    ...FONTS.h6,
-    color: COLORS.warning,
-    fontWeight: 'bold',
-    marginBottom: SIZES.margin,
-    textAlign: 'center',
-  },
-  instructionItem: {
-    ...FONTS.fontSm,
-    color: COLORS.text,
-    lineHeight: SIZES.fontSm * 1.4,
-    marginBottom: SIZES.margin / 2,
-  },
-  deleteButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.danger,
-    borderRadius: SIZES.radius,
-    width: '100%',
-    padding: SIZES.padding,
-    marginBottom: SIZES.margin,
-  },
-  deleteButtonText: {
-    ...FONTS.h6,
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    width: '100%',
-    paddingVertical: SIZES.padding,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    ...FONTS.h6,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  scrollView: { flex: 1 },
+  contentContainer: { flexGrow: 1, padding: SIZES.padding, justifyContent: 'center' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background, padding: SIZES.padding },
+  loadingText: { ...FONTS.font, color: COLORS.text, marginTop: SIZES.margin },
+  warningContainer: { alignItems: 'center', padding: SIZES.padding },
+  warningTitle: { ...FONTS.h4, color: COLORS.danger, textAlign: 'center', fontWeight: '900', marginBottom: SIZES.margin / 2 },
+  warningText: { ...FONTS.font, color: COLORS.textLight, textAlign: 'center', lineHeight: SIZES.font * 1.4, marginBottom: SIZES.margin * 2 },
+  instructionsContainer: { backgroundColor: COLORS.card, borderRadius: SIZES.radius, padding: SIZES.padding, marginBottom: SIZES.margin * 2, borderLeftWidth: 4, borderLeftColor: COLORS.warning },
+  instructionsTitle: { ...FONTS.h6, color: COLORS.warning, fontWeight: 'bold', marginBottom: SIZES.margin, textAlign: 'center' },
+  instructionItem: { ...FONTS.fontSm, color: COLORS.text, lineHeight: SIZES.fontSm * 1.4, marginBottom: SIZES.margin / 2 },
+  deleteButton: { justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.danger, borderRadius: SIZES.radius, width: '100%', padding: SIZES.padding, marginBottom: SIZES.margin },
+  deleteButtonText: { ...FONTS.h6, color: COLORS.white, fontWeight: 'bold' },
+  cancelButton: { width: '100%', paddingVertical: SIZES.padding, alignItems: 'center' },
+  cancelButtonText: { ...FONTS.h6, color: COLORS.primary, fontWeight: '600' },
 };
 
 export default DeleteAccount;

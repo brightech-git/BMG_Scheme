@@ -223,7 +223,7 @@ function OtpPage({ navigation, route }) {
         await AsyncStorage.removeItem("tempUserData");
         stopListener && stopListener();
         setShowFullScreenLoader(false); // 🔹 Hide loader on success
-        navigation.navigate("MainLanding");
+        navigation.navigate("LoginPage");
       } else {
         showToast(res.error || "OTP verification failed");
         clearOtp();

@@ -1,119 +1,113 @@
 import React from 'react';
-import {
-  ScrollView,
-  View,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-} from 'react-native';
+import { ScrollView, View, SafeAreaView, StatusBar, Image, ImageBackground, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { TextDefault } from '../../components';
-import { colors1 } from '../../utils/colors';
+import CommonHeader from '../../components/CommonHeader/CommonHeader';
+import { COLORS, SIZES, FONTS } from '../../utils/Theme';
 
-const AboutPage = () => {
-  const navigation = useNavigation();
-
-  const features = [
+const CONTENT = {
+  story: [
+    "BMG Jewellers began as a small, family-run business in Madurai with a mission to provide high-quality, genuine jewellery.",
+    "Now a trusted name, we’re recognized for our craftsmanship, value, and customer care, rooted in the cultural richness of Madurai.",
+    "Our legacy is built on lasting customer relationships, with many returning for their special occasions."
+  ],
+  craftsmanship: [
+    "Our master craftsmen blend traditional techniques with modern designs, creating timeless pieces with meticulous attention to detail.",
+    "Specializing in gold, diamonds, and precious stones, every piece meets our rigorous quality standards."
+  ],
+  features: [
     {
       icon: 'diamond',
       title: 'Uncompromising Quality',
-      description: 'We use only the finest materials and employ skilled artisans to create jewellery that stands the test of time.',
-      color: '#FFD700'
+      description: 'We use the finest materials and skilled artisans to craft jewellery that endures.',
+      color: COLORS.primary
     },
     {
       icon: 'handshake',
       title: 'Trust & Transparency',
-      description: "For generations, we've built relationships based on honesty, with no hidden costs or compromises.",
-      color: '#4A90E2'
+      description: 'For generations, we’ve built honest relationships with no hidden costs.',
+      color: COLORS.secondary
     },
     {
       icon: 'auto-awesome',
       title: 'Heritage & Innovation',
-      description: 'We honor traditional craftsmanship while embracing innovative designs for the modern customer.',
-      color: '#9C27B0'
+      description: 'We honor traditional craftsmanship while embracing modern designs.',
+      color: COLORS.warning
     }
-  ];
+  ],
+  mission: "At BMG Jewellers, we aim to make high-quality, beautifully designed jewellery accessible to everyone, with transparency and integrity.",
+  vision: "We aspire to be a leading name in jewellery, expanding beyond Madurai while maintaining our commitment to quality and customer satisfaction.",
+  promise: [
+    "We promise exceptional value, superior craftsmanship, and unwavering customer trust.",
+    "Your satisfaction is our ultimate goal, ensuring every interaction with BMG Jewellers is memorable."
+  ]
+};
+
+const AboutPage = () => {
+  const navigation = useNavigation();
+  const { height, width } = Dimensions.get('window');
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor={colors1.primary} barStyle="light-content" />
-      
-      {/* Header */}
-      <LinearGradient
-        colors={colors1.gradientPrimary}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
+    <ImageBackground
+      source={require('../../assets/bg4.jpg')}
+      style={[styles.background, { width, height }]}
+      resizeMode="cover" // ensure image covers entire screen
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+        <CommonHeader title="About Us" />
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons name="arrow-back" size={24} color={colors1.textLight} />
-        </TouchableOpacity>
-        
-        <TextDefault style={styles.headerTitle} H3>
-          About BMG Jewellers
-        </TextDefault>
-      </LinearGradient>
-
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Company Logo/Icon Section */}
-        <View style={styles.logoSection}>
-          <LinearGradient
-            colors={['#FFD700', '#FFA500']}
-            style={styles.logoGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <MaterialIcons name="storefront" size={60} color="#FFF" />
-          </LinearGradient>
-        </View>
-
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <LinearGradient
+              colors={COLORS.gradientPrimary}
+              style={styles.logoGradient}
+            >
+              <Image
+                source={require('../../assets/image/logo4.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </LinearGradient>
+          </View>
         {/* Our Story Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="book" size={24} color={colors1.primary} />
-            <TextDefault style={styles.sectionTitle} H4>Our Story</TextDefault>
+            <MaterialIcons name="book" size={SIZES.h5} color={COLORS.primary} />
+            <TextDefault style={[FONTS.h4, styles.sectionTitle]}>Our Story</TextDefault>
           </View>
-          <TextDefault style={styles.sectionContent} H6>
-            BMG Jewellers began as a small, family-run business with a simple goal: to offer high-quality, genuine jewellery to the people of Madurai. What started as a humble endeavour has now grown into a trusted name, recognized for our dedication to craftsmanship, value, and customer care.
-          </TextDefault>
-          <TextDefault style={styles.sectionContent} H6>
-            In a city known for its cultural richness and historic landmarks, BMG Jewellers has created a legacy of trust by offering fine jewellery that embodies both tradition and modern elegance.
-          </TextDefault>
-          <TextDefault style={styles.sectionContent} H6>
-            Over the years, we have expanded our offerings while staying true to our core principles of fairness, transparency, and integrity. We take pride in the fact that we have built lasting relationships with our customers, many of whom continue to return to us for their special occasions and jewellery needs.
-          </TextDefault>
+          {CONTENT.story.map((text, index) => (
+            <TextDefault key={index} style={[FONTS.font, styles.sectionContent]}>
+              {text}
+            </TextDefault>
+          ))}
         </View>
 
-        {/* Our Craftsmanship Section */}
+        {/* Craftsmanship Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="precision-manufacturing" size={24} color={colors1.primary} />
-            <TextDefault style={styles.sectionTitle} H4>Our Craftsmanship</TextDefault>
+            <MaterialIcons name="precision-manufacturing" size={SIZES.h5} color={COLORS.primary} />
+            <TextDefault style={[FONTS.h4, styles.sectionTitle]}>Our Craftsmanship</TextDefault>
           </View>
-          <TextDefault style={styles.sectionContent} H6>
-            Our master craftsmen blend traditional techniques with contemporary design, creating pieces that honor heritage while embracing modern aesthetics. Each jewellery item is meticulously crafted with attention to every detail.
-          </TextDefault>
-          <TextDefault style={styles.sectionContent} H6>
-            We specialize in exquisite gold jewellery, brilliant diamonds, and vibrant precious stones, ensuring that every piece meets our rigorous standards of quality and beauty.
-          </TextDefault>
-          
-          {/* BIS Certification Highlight */}
+          {CONTENT.craftsmanship.map((text, index) => (
+            <TextDefault key={index} style={[FONTS.font, styles.sectionContent]}>
+              {text}
+            </TextDefault>
+          ))}
           <View style={styles.certificationBox}>
             <LinearGradient
-              colors={['#E8F5E8', '#F0FFF0']}
+              colors={[COLORS.success + '15', COLORS.transparent]}
               style={styles.certificationGradient}
             >
-              <MaterialIcons name="verified" size={30} color="#4CAF50" />
-              <TextDefault style={styles.certificationText} H6>
-                Every item in our collection is crafted using <TextDefault style={styles.boldText}>92.5 BIS hallmark-certified silver</TextDefault>, ensuring purity, quality, and authenticity.
+              <MaterialIcons name="verified" size={SIZES.h3} color={COLORS.success} />
+              <TextDefault style={[FONTS.font, styles.certificationText]}>
+                All items crafted with <TextDefault style={FONTS.body1}>92.5 BIS hallmark-certified silver</TextDefault> for guaranteed purity.
               </TextDefault>
             </LinearGradient>
           </View>
@@ -122,22 +116,21 @@ const AboutPage = () => {
         {/* Why Choose Us Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="star" size={24} color={colors1.primary} />
-            <TextDefault style={styles.sectionTitle} H4>Why Choose Us</TextDefault>
+            <MaterialIcons name="star" size={SIZES.h5} color={COLORS.primary} />
+            <TextDefault style={[FONTS.h4, styles.sectionTitle]}>Why Choose Us</TextDefault>
           </View>
-          
-          {features.map((feature, index) => (
+          {CONTENT.features.map((feature, index) => (
             <View key={index} style={styles.featureCard}>
               <LinearGradient
-                colors={[feature.color + '20', feature.color + '10']}
+                colors={[feature.color + '15', COLORS.transparent]}
                 style={styles.featureGradient}
               >
                 <View style={[styles.featureIcon, { backgroundColor: feature.color + '30' }]}>
-                  <MaterialIcons name={feature.icon} size={24} color={feature.color} />
+                  <MaterialIcons name={feature.icon} size={SIZES.h5} color={feature.color} />
                 </View>
                 <View style={styles.featureContent}>
-                  <TextDefault style={styles.featureTitle} H5>{feature.title}</TextDefault>
-                  <TextDefault style={styles.featureDescription} H6>
+                  <TextDefault style={[FONTS.h5, styles.featureTitle]}>{feature.title}</TextDefault>
+                  <TextDefault style={[FONTS.fontSm, styles.featureDescription]}>
                     {feature.description}
                   </TextDefault>
                 </View>
@@ -149,123 +142,97 @@ const AboutPage = () => {
         {/* Mission Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="flag" size={24} color={colors1.primary} />
-            <TextDefault style={styles.sectionTitle} H4>Our Mission</TextDefault>
+            <MaterialIcons name="flag" size={SIZES.h5} color={COLORS.primary} />
+            <TextDefault style={[FONTS.h4, styles.sectionTitle]}>Our Mission</TextDefault>
           </View>
-          <View style={styles.missionBox}>
-            <LinearGradient
-              colors={colors1.gradientPrimary}
-              style={styles.missionGradient}
-            >
-              <TextDefault style={styles.missionText} H5>
-                At BMG Jewellers, our mission is to make high-quality, beautifully designed jewellery accessible to everyone.
-              </TextDefault>
-            </LinearGradient>
-          </View>
-          <TextDefault style={styles.sectionContent} H6>
-            We believe in offering our customers genuine products without hidden costs or extra charges. Every item reflects our commitment to providing products that meet the highest standards in the industry.
-          </TextDefault>
+          <LinearGradient
+            colors={COLORS.gradientPrimary}
+            style={styles.missionGradient}
+          >
+            <TextDefault style={[FONTS.h5, styles.missionText]}>
+              {CONTENT.mission}
+            </TextDefault>
+          </LinearGradient>
         </View>
 
         {/* Vision Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="visibility" size={24} color={colors1.primary} />
-            <TextDefault style={styles.sectionTitle} H4>Our Vision</TextDefault>
+            <MaterialIcons name="visibility" size={SIZES.h5} color={COLORS.primary} />
+            <TextDefault style={[FONTS.h4, styles.sectionTitle]}>Our Vision</TextDefault>
           </View>
-          <View style={styles.visionBox}>
-            <LinearGradient
-              colors={['#FFF8E1', '#FFFDE7']}
-              style={styles.visionGradient}
-            >
-              <MaterialIcons name="trending-up" size={30} color="#FF9800" />
-              <TextDefault style={styles.visionText} H6>
-                As we continue to grow, our vision is to become a leading name in the jewellery industry, known for our unwavering commitment to quality, transparency, and customer satisfaction.
-              </TextDefault>
-            </LinearGradient>
-          </View>
-          <TextDefault style={styles.sectionContent} H6>
-            We aim to expand our reach beyond Madurai, bringing our exceptional services and products to customers across South India and beyond, while always maintaining the same personal touch that has defined us since day one.
-          </TextDefault>
+          <LinearGradient
+            colors={[COLORS.warning + '15', COLORS.transparent]}
+            style={styles.visionGradient}
+          >
+            <MaterialIcons name="trending-up" size={SIZES.h3} color={COLORS.warning} />
+            <TextDefault style={[FONTS.font, styles.visionText]}>
+              {CONTENT.vision}
+            </TextDefault>
+          </LinearGradient>
         </View>
 
-        {/* Our Promise Section */}
+        {/* Promise Section */}
         <View style={[styles.section, styles.lastSection]}>
           <View style={styles.sectionHeader}>
-            <MaterialIcons name="favorite" size={24} color={colors1.primary} />
-            <TextDefault style={styles.sectionTitle} H4>Our Promise</TextDefault>
+            <MaterialIcons name="favorite" size={SIZES.h5} color={COLORS.primary} />
+            <TextDefault style={[FONTS.h4, styles.sectionTitle]}>Our Promise</TextDefault>
           </View>
-          <View style={styles.promiseBox}>
-            <LinearGradient
-              colors={['#FFE0E6', '#FFF0F5']}
-              style={styles.promiseGradient}
-            >
-              <MaterialIcons name="handshake" size={30} color="#E91E63" />
-              <TextDefault style={styles.promiseText} H6>
-                We promise to continue delivering exceptional value, maintaining the highest standards of craftsmanship, and upholding the trust that our customers have placed in us for generations.
+          <LinearGradient
+            colors={[COLORS.secondary + '15', COLORS.transparent]}
+            style={styles.promiseGradient}
+          >
+            {CONTENT.promise.map((text, index) => (
+              <TextDefault
+                key={index}
+                style={[FONTS.font, styles.promiseText, index === 1 && FONTS.body1]}
+              >
+                {text}
               </TextDefault>
-              <TextDefault style={[styles.promiseText, styles.boldText]} H6>
-                Your satisfaction is our ultimate goal, and we strive to make every interaction with BMG Jewellers a memorable experience.
-              </TextDefault>
-            </LinearGradient>
-          </View>
+            ))}
+          </LinearGradient>
         </View>
       </ScrollView>
     </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = {
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 10,
-  },
-  headerTitle: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
   logoSection: {
     alignItems: 'center',
-    paddingVertical: 30,
-    backgroundColor: '#FFF',
-    marginBottom: 10,
+    paddingVertical: SIZES.padding * 1,
+    // backgroundColor: COLORS.card,
+    marginBottom: SIZES.margin,
   },
   logoGradient: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: SIZES.width * 0.2,
+    height: SIZES.width * 0.2,
+    borderRadius: SIZES.radius_lg,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
+    elevation: 6,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  logo: {
+    width: SIZES.width * 0.15,
+    height: SIZES.width * 0.15,
+    borderRadius: SIZES.radius_lg,
   },
   section: {
-    backgroundColor: '#FFF',
-    marginBottom: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    backgroundColor: COLORS.card,
+    marginBottom: SIZES.margin,
+    padding: SIZES.padding,
   },
   lastSection: {
     marginBottom: 0,
@@ -273,110 +240,81 @@ const styles = {
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: SIZES.padding,
   },
   sectionTitle: {
-    marginLeft: 10,
-    fontWeight: 'bold',
-    color: '#333',
+    marginLeft: SIZES.padding * 0.5,
   },
   sectionContent: {
-    lineHeight: 24,
-    color: '#555',
-    marginBottom: 12,
+    marginBottom: SIZES.padding * 0.75,
     textAlign: 'justify',
   },
-  boldText: {
-    fontWeight: 'bold',
-    color: '#333',
-  },
   certificationBox: {
-    marginTop: 15,
+    marginTop: SIZES.padding,
   },
   certificationGradient: {
-    padding: 15,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    padding: SIZES.padding,
+    borderRadius: SIZES.radius,
   },
   certificationText: {
-    marginLeft: 15,
     flex: 1,
-    lineHeight: 22,
-    color: '#2E7D32',
+    marginLeft: SIZES.padding,
   },
   featureCard: {
-    marginBottom: 15,
+    marginBottom: SIZES.padding,
   },
   featureGradient: {
-    padding: 15,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    padding: SIZES.padding,
+    borderRadius: SIZES.radius,
   },
   featureIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: SIZES.width * 0.1,
+    height: SIZES.width * 0.1,
+    borderRadius: SIZES.radius,
     justifyContent: 'center',
     alignItems: 'center',
   },
   featureContent: {
-    marginLeft: 15,
     flex: 1,
+    marginLeft: SIZES.padding,
   },
   featureTitle: {
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+    marginBottom: SIZES.radius_sm * 0.5,
   },
   featureDescription: {
-    color: '#555',
-    lineHeight: 20,
-  },
-  missionBox: {
-    marginBottom: 15,
+    lineHeight: SIZES.font * 1.2,
   },
   missionGradient: {
-    padding: 20,
-    borderRadius: 12,
+    padding: SIZES.padding,
+    borderRadius: SIZES.radius,
     alignItems: 'center',
   },
   missionText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+    color: COLORS.white,
     textAlign: 'center',
-    lineHeight: 24,
-  },
-  visionBox: {
-    marginBottom: 15,
   },
   visionGradient: {
-    padding: 15,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    padding: SIZES.padding,
+    borderRadius: SIZES.radius,
   },
   visionText: {
-    marginLeft: 15,
     flex: 1,
-    lineHeight: 22,
-    color: '#E65100',
-    fontWeight: '500',
-  },
-  promiseBox: {
-    marginTop: 10,
+    marginLeft: SIZES.padding,
   },
   promiseGradient: {
-    padding: 20,
-    borderRadius: 12,
+    padding: SIZES.padding,
+    borderRadius: SIZES.radius,
     alignItems: 'center',
   },
   promiseText: {
     textAlign: 'center',
-    lineHeight: 22,
-    color: '#C2185B',
-    marginTop: 10,
+    marginTop: SIZES.padding * 0.5,
   },
 };
 

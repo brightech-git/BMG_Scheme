@@ -13,16 +13,26 @@ function GoldPlan(props) {
     schemeName,
     description = "No description available",
   } = props;
+
+  // console.log("Gold Plan Loaded");
+  // console.log("Scheme ID:", schemeId);
+  // console.log("Scheme Name:", schemeName);
+  // console.log("Descriptions:", description);
+
   const navigation = useNavigation();
 
-  // ✅ Only render schemeId = 5 (Dream Gold Plan)
-  // if (schemeId !== 5) {
-  // return null;
-  // }
+  // Handle scheme navigation
+  const handleJoinScheme = () => {
+    navigation.navigate("AddNewMember", { schemeId });
+  };
+
+  const handleKnowMore = () => {
+    // Navigate to scheme details or show information
+    navigation.navigate("KnowMore", { schemeId });
+  };
 
   return (
     <TouchableOpacity style={[styles.cardContainer, props.styles]}>
-      {/* 🔥 Gradient Background */}
       <LinearGradient
         colors={[COLORS.gradientcolor7, COLORS.gradientcolor8]}
         start={{ x: 0, y: 0 }}
@@ -47,14 +57,14 @@ function GoldPlan(props) {
         <View style={styles.bottomSection}>
           <TouchableOpacity
             style={styles.payButton}
-            onPress={() => navigation.navigate("KnowMore", { schemeId })}
+            onPress={handleKnowMore}
           >
             <TextDefault style={styles.payButtonText}>Know More</TextDefault>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.payButton}
-            onPress={() => navigation.navigate("AddNewMember", { schemeId })}
+            onPress={handleJoinScheme}
           >
             <TextDefault style={styles.payButtonText}>Join Scheme</TextDefault>
           </TouchableOpacity>
@@ -108,19 +118,18 @@ const styles = StyleSheet.create({
   },
   payButtonText: {
     color: colors.black,
-  
     fontWeight: "bold",
     textAlign: "center",
-     ...FONTS.body1,
-     fontSize:SIZES.fontSm,
+    ...FONTS.body1,
+    fontSize: SIZES.fontSm,
   },
   description: {
     color: colors.white,
     fontSize: 14,
     marginBottom: 20,
     fontWeight: "bold",
-     ...FONTS.body,
-     fontSize:SIZES.h4,
+    ...FONTS.body,
+    fontSize: SIZES.h4,
   },
   schemeText: {
     color: colors.greenColor,

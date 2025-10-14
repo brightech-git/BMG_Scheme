@@ -188,7 +188,7 @@ function HelpCenterPage() {
           </View>
         </ScrollView>
       </ImageBackground>
-      <BottomTab />
+      {/* <BottomTab /> */}
     </View>
   )
 }

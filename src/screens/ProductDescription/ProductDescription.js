@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -24,19 +24,49 @@ const SchemePassbook = ({ navigation, route }) => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [currentRates, setCurrentRates] = useState({ SILVERRATE: 0, GOLDRATE: 0 });
+  const [ratesLoading, setRatesLoading] = useState(true);
+
+  // Fetch current silver and gold rates
+  const fetchCurrentRates = useCallback(async () => {
+    try {
+      setRatesLoading(true);
+      const response = await fetch('https://scheme.bmgjewellers.com/v1/api/account/todayrate');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const ratesData = await response.json();
+      console.log('Current rates:', ratesData);
+      setCurrentRates(ratesData);
+    } catch (error) {
+      console.error('Error fetching current rates:', error);
+      Alert.alert("Error", "Failed to fetch current silver rates");
+    } finally {
+      setRatesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCurrentRates();
+  }, [fetchCurrentRates]);
 
   // Determine scheme type
   const schemeType = useMemo(() => {
-    const schemeName = accountDetails?.schemeSummary?.schemeName?.trim();
+    const schemeName = productData?.schemeSummary?.schemeName?.trim();
+    const schemeSName = productData?.schemeSummary?.schemeSName?.trim();
     
-    if (schemeName === "BMG AMOUNT SCHEME") {
+    if (schemeName === "BMG AMOUNT SCHEME" || schemeSName === "BAS") {
       return "AMOUNT_SCHEME";
-    } else if (schemeName === "BMG DIGI SILVER") {
+    } else if (schemeName === "BMG DIGI SILVER" || schemeSName === "BDS") {
       return "DIGI_SILVER";
+    } else if (schemeName === "BMG FIXED DEPOSIT" || schemeSName === "BFD") {
+      return "FIXED_DEPOSIT";
     } else {
       return "OTHER";
     }
-  }, [accountDetails]);
+  }, [productData]);
 
   // Date formatting
   const formatDate = useCallback((dateString) => {
@@ -56,13 +86,15 @@ const SchemePassbook = ({ navigation, route }) => {
 
   // Calculate scheme statistics
   const schemeStats = useMemo(() => {
-    const totalPaid = parseFloat(accountDetails.amount || 0);
-    const silverSaved = parseFloat(productData?.amountWeight?.Weight || 0);
-    const installmentsPaid =
-      accountDetails?.schemeSummary?.schemaSummaryTransBalance?.insPaid || 0;
-    const totalInstallments = accountDetails?.schemeSummary?.instalment || 0;
-    const progressPercentage =
-      totalInstallments > 0 ? (installmentsPaid / totalInstallments) * 100 : 0;
+    const totalPaid = parseFloat(productData?.schemeSummary?.schemaSummaryTransBalance?.amtrecd || 0);
+    const silverSaved = parseFloat(productData?.schemeSummary?.totalWeight || 0);
+    const installmentsPaid = parseInt(productData?.schemeSummary?.schemaSummaryTransBalance?.insPaid || 0);
+    const totalInstallments = parseInt(productData?.schemeSummary?.instalment || 0);
+    const progressPercentage = totalInstallments > 0 ? (installmentsPaid / totalInstallments) * 100 : 0;
+
+    // Calculate current silver value
+    const currentSilverValue = silverSaved * currentRates.SILVERRATE;
+    const profitLoss = currentSilverValue - totalPaid;
 
     return {
       totalPaid,
@@ -70,21 +102,27 @@ const SchemePassbook = ({ navigation, route }) => {
       installmentsPaid,
       totalInstallments,
       progressPercentage: Math.min(progressPercentage, 100),
+      currentSilverValue,
+      profitLoss,
     };
-  }, [productData, accountDetails]);
+  }, [productData, currentRates]);
 
   // Pull-to-refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log("Data refreshed");
+      // Refresh both data and current rates
+      await Promise.all([
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+        fetchCurrentRates()
+      ]);
+      console.log("Data and rates refreshed");
     } catch (error) {
       Alert.alert("Error", "Failed to refresh data. Please try again.");
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [fetchCurrentRates]);
 
   // Render payment history card
   const renderPaymentHistory = useCallback(
@@ -103,14 +141,20 @@ const SchemePassbook = ({ navigation, route }) => {
           </View>
           <View style={styles.transactionContent}>
             <Text style={styles.transactionInstallment}>
-              {schemeType === "AMOUNT_SCHEME" ? `Installment ${item.installment}` : "Payment"}
+              {schemeType === "AMOUNT_SCHEME" ? `Installment ${item.installment}` : 
+               schemeType === "DIGI_SILVER" ? "Silver Purchase" : "Payment"}
             </Text>
             <Text style={styles.transactionDate}>
               {formatDate(item.updateTime)}
             </Text>
           </View>
           <View style={styles.transactionRight}>
-            <Text style={styles.transactionAmount}>₹ {item.amount}</Text>
+            <Text style={styles.transactionAmount}>₹ {parseFloat(item.amount).toLocaleString('en-IN')}</Text>
+            {schemeType === "DIGI_SILVER" && item.weight > 0 && (
+              <Text style={styles.silverWeight}>
+                {parseFloat(item.weight).toFixed(3)}g
+              </Text>
+            )}
           </View>
         </View>
       );
@@ -145,40 +189,67 @@ const SchemePassbook = ({ navigation, route }) => {
   );
 
   // Silver Summary for BMG Digi Silver
-  const SilverSummary = () => (
-    <View style={styles.silverSummaryContainer}>
-      <View style={styles.silverSummaryRow}>
-        <View style={styles.silverStat}>
-          <MaterialIcons name="account-balance-wallet" size={20} color={COLORS.primary} />
-          <Text style={styles.silverStatValue}>
-            ₹{schemeStats.totalPaid.toLocaleString("en-IN")}
-          </Text>
-          <Text style={styles.silverStatLabel}>Total Paid</Text>
+  const SilverSummary = () => {
+    const hasValidSilverData = schemeStats.silverSaved > 0;
+    const averageRate = hasValidSilverData ? (schemeStats.totalPaid / schemeStats.silverSaved) : 0;
+
+    return (
+      <View style={styles.silverSummaryContainer}>
+        <View style={styles.silverSummaryRow}>
+          <View style={styles.silverStat}>
+            <MaterialIcons name="account-balance-wallet" size={20} color={COLORS.primary} />
+            <Text style={styles.silverStatValue}>
+              ₹{schemeStats.totalPaid.toLocaleString("en-IN")}
+            </Text>
+            <Text style={styles.silverStatLabel}>Total Paid</Text>
+          </View>
+          
+          <View style={styles.silverDivider} />
+          
+          <View style={styles.silverStat}>
+            <MaterialIcons name="inventory" size={20} color={COLORS.success} />
+            <Text style={styles.silverStatValue}>
+              {schemeStats.silverSaved.toFixed(3)}g
+            </Text>
+            <Text style={styles.silverStatLabel}>Silver Saved</Text>
+          </View>
         </View>
         
-        <View style={styles.silverDivider} />
-        
-        <View style={styles.silverStat}>
-          <MaterialIcons name="inventory" size={20} color={COLORS.success} />
-          <Text style={styles.silverStatValue}>
-            {schemeStats.silverSaved.toFixed(2)}g
-          </Text>
-          <Text style={styles.silverStatLabel}>Silver Saved</Text>
+        {/* Current Silver Rate */}
+        <View style={styles.silverRateContainer}>
+          <View style={styles.rateRow}>
+            <Text style={styles.rateLabel}>Current Silver Rate:</Text>
+            {ratesLoading ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <Text style={styles.currentRateValue}>
+                ₹{currentRates.SILVERRATE}/g
+              </Text>
+            )}
+          </View>
+          
+          
         </View>
       </View>
-      
-      <View style={styles.silverPriceContainer}>
-        <Text style={styles.silverPriceLabel}>Current Silver Rate:</Text>
-        <Text style={styles.silverPriceValue}>
-          ₹{(schemeStats.totalPaid / Math.max(schemeStats.silverSaved, 1)).toFixed(2)}/g
+    );
+  };
+
+  // Fixed Deposit Summary
+  const FixedDepositSummary = () => (
+    <View style={styles.fixedDepositContainer}>
+      <View style={styles.fixedDepositStat}>
+        <MaterialIcons name="savings" size={24} color={COLORS.primary} />
+        <Text style={styles.fixedDepositValue}>
+          ₹{schemeStats.totalPaid.toLocaleString("en-IN")}
         </Text>
+        <Text style={styles.fixedDepositLabel}>Deposit Amount</Text>
       </View>
     </View>
   );
 
   // Payment History Section Component
   const PaymentHistorySection = () => {
-    const paymentHistory = accountDetails?.paymentHistoryList || [];
+    const paymentHistory = productData?.paymentHistoryList || [];
     const recentPayments = paymentHistory.slice(0, 3);
 
     return (
@@ -195,8 +266,8 @@ const SchemePassbook = ({ navigation, route }) => {
               style={styles.viewAllButton}
               onPress={() =>
                 navigation.navigate("PaymentHistory", {
-                  accountDetails,
-                  schemeName: productData?.pname,
+                  accountDetails: productData,
+                  schemeName: productData?.schemeSummary?.schemeName,
                   productdata: productData,
                 })
               }
@@ -248,7 +319,7 @@ const SchemePassbook = ({ navigation, route }) => {
         </View>
         <Text style={styles.infoCardLabel}>Join Date</Text>
         <Text style={styles.infoCardValue}>
-          {formatDate(productData?.joindate)}
+          {formatDate(productData?.joinDate)}
         </Text>
       </View>
 
@@ -264,17 +335,11 @@ const SchemePassbook = ({ navigation, route }) => {
 
       <View style={styles.infoCard}>
         <View style={styles.infoIconContainer}>
-          <Icon name="line-chart" size={18} color={COLORS.secondary} />
+          <Icon name="hashtag" size={18} color={COLORS.secondary} />
         </View>
-        <Text style={styles.infoCardLabel}>
-          {schemeType === "DIGI_SILVER" ? "Avg Silver Rate" : "Avg Rate"}
-        </Text>
+        <Text style={styles.infoCardLabel}>Account No</Text>
         <Text style={styles.infoCardValue}>
-          ₹
-          {(
-            schemeStats.totalPaid / Math.max(schemeStats.silverSaved, 1)
-          ).toFixed(0)}
-          /g
+          {productData?.regNo}
         </Text>
       </View>
     </View>
@@ -287,18 +352,21 @@ const SchemePassbook = ({ navigation, route }) => {
         <View style={styles.schemeNameContainer}>
           <View style={styles.schemeBadge}>
             <MaterialIcons 
-              name={schemeType === "DIGI_SILVER" ? "attach-money" : "stars"} 
+              name={
+                schemeType === "DIGI_SILVER" ? "attach-money" : 
+                schemeType === "AMOUNT_SCHEME" ? "schedule" :
+                schemeType === "FIXED_DEPOSIT" ? "account-balance" : "stars"
+              } 
               size={16} 
               color={COLORS.primary} 
             />
           </View>
           <View style={styles.schemeInfo}>
             <Text style={styles.schemeName} numberOfLines={2}>
-              {productData?.pname || "Scheme Name"}
+              {productData?.personalInfo?.pName || productData?.pname || "Customer"}
             </Text>
             <Text style={styles.schemeType}>
-              {schemeType === "AMOUNT_SCHEME" ? "BMG Amount Scheme" : 
-               schemeType === "DIGI_SILVER" ? "BMG Digi Silver" : "Other Scheme"}
+              {productData?.schemeSummary?.schemeName || "Scheme"} • {productData?.groupCode}
             </Text>
           </View>
         </View>
@@ -315,9 +383,10 @@ const SchemePassbook = ({ navigation, route }) => {
         </View>
       </View>
 
-      {/* Show Progress Bar for BMG Amount Scheme, Silver Summary for Digi Silver */}
+      {/* Show appropriate summary based on scheme type */}
       {schemeType === "AMOUNT_SCHEME" && <ProgressBar />}
       {schemeType === "DIGI_SILVER" && <SilverSummary />}
+      {schemeType === "FIXED_DEPOSIT" && <FixedDepositSummary />}
 
       {/* Stats Grid - Different content based on scheme type */}
       <View style={styles.statsGrid}>
@@ -340,7 +409,11 @@ const SchemePassbook = ({ navigation, route }) => {
         <View style={styles.statBox}>
           <View style={styles.statIconWrapper}>
             <MaterialIcons
-              name={schemeType === "AMOUNT_SCHEME" ? "event-note" : "inventory"}
+              name={
+                schemeType === "AMOUNT_SCHEME" ? "event-note" : 
+                schemeType === "DIGI_SILVER" ? "inventory" :
+                "payments"
+              }
               size={20}
               color={COLORS.secondary}
             />
@@ -348,10 +421,13 @@ const SchemePassbook = ({ navigation, route }) => {
           <Text style={styles.statValue}>
             {schemeType === "AMOUNT_SCHEME" 
               ? `${schemeStats.installmentsPaid}/${schemeStats.totalInstallments}`
-              : `${schemeStats.silverSaved.toFixed(2)}g`}
+              : schemeType === "DIGI_SILVER" 
+              ? `${schemeStats.silverSaved.toFixed(3)}g`
+              : "Lump Sum"}
           </Text>
           <Text style={styles.statLabel}>
-            {schemeType === "AMOUNT_SCHEME" ? "Installments" : "Silver Saved"}
+            {schemeType === "AMOUNT_SCHEME" ? "Installments" : 
+             schemeType === "DIGI_SILVER" ? "Silver Saved" : "Payment Type"}
           </Text>
         </View>
       </View>
@@ -507,7 +583,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    marginBottom: moderateScale(12),
+    marginBottom: moderateScale(16),
   },
   silverStat: {
     alignItems: "center",
@@ -532,24 +608,58 @@ const styles = StyleSheet.create({
     height: moderateScale(40),
     backgroundColor: COLORS.borderColor,
   },
-  silverPriceContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+  silverRateContainer: {
     backgroundColor: COLORS.surface,
-    padding: moderateScale(10),
+    padding: moderateScale(16),
     borderRadius: SIZES.radius,
-    marginTop: moderateScale(8),
+    marginTop: moderateScale(12),
   },
-  silverPriceLabel: {
+  rateRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: moderateScale(8),
+  },
+  rateLabel: {
     ...FONTS.subheading,
     color: COLORS.textLight,
-    marginRight: moderateScale(6),
+    fontSize: SIZES.fontSm,
   },
-  silverPriceValue: {
+  currentRateValue: {
     ...FONTS.body1,
     color: COLORS.primary,
+    fontWeight: "700",
+  },
+  averageRateValue: {
+    ...FONTS.body1,
+    color: COLORS.secondary,
     fontWeight: "600",
+  },
+  silverValue: {
+    ...FONTS.body1,
+    color: COLORS.success,
+    fontWeight: "700",
+  },
+  profitLossValue: {
+    ...FONTS.body1,
+    fontWeight: "700",
+  },
+  fixedDepositContainer: {
+    alignItems: "center",
+    marginBottom: moderateScale(20),
+  },
+  fixedDepositStat: {
+    alignItems: "center",
+  },
+  fixedDepositValue: {
+    ...FONTS.h5,
+    color: COLORS.primary,
+    marginVertical: moderateScale(8),
+    fontWeight: "700",
+  },
+  fixedDepositLabel: {
+    ...FONTS.subheading,
+    color: COLORS.textLight,
   },
   statsGrid: {
     flexDirection: "row",
@@ -577,6 +687,7 @@ const styles = StyleSheet.create({
     color: COLORS.title,
     marginBottom: moderateScale(4),
     fontSize: SIZES.h6,
+    textAlign: 'center',
   },
   statLabel: { 
     ...FONTS.font, 
@@ -714,6 +825,12 @@ const styles = StyleSheet.create({
     ...FONTS.body1,
     fontWeight: "700",
     color: COLORS.primary,
+  },
+  silverWeight: {
+    ...FONTS.subheading,
+    color: COLORS.success,
+    fontSize: SIZES.fontSm,
+    marginTop: moderateScale(2),
   },
   loadingContainer: {
     alignItems: "center",
